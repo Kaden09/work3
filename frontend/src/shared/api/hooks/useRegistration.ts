@@ -1,21 +1,19 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import fetchRegister from "../requests/register";
 import type { UseFormReset } from "react-hook-form";
 import type { ISignupForm } from "../../../widgets/Forms/SignupForm/types";
 
 function useRegistration(reset: UseFormReset<ISignupForm>) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: fetchRegister,
-    onSuccess: (data) => {
-      if (!data.isSuccess && data.errors.length > 0) {
-        console.log(data.errors[0].description);
-      } else {
-        console.log("Успешная регистрация: ", data);
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
       reset();
-    },
-    onError: (error) => {
-      console.log("Ошибка регистрации: ", error);
+      navigate("/app");
     },
   });
 }

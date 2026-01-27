@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const authApi = axios.create({
-  baseURL: "/api/Auth",
+export const userApi = axios.create({
+  baseURL: "/api/User",
   timeout: 5000,
   withCredentials: true,
 });

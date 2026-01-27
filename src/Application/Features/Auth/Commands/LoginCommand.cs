@@ -9,18 +9,18 @@ using MessagingPlatform.Domain.ValueObjects;
 
 namespace MessagingPlatform.Application.Features.Auth.Commands;
 
-public sealed record LoginCommand(string Email, string Password) : IRequest<Result<AuthResponse>>;
+public sealed record LoginCommand(string Email, string Password, bool RememberMe = false) : IRequest<Result<AuthResponse>>;
 
 public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
     public LoginCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty()
-            .EmailAddress();
+            .NotEmpty().WithMessage("Email обязателен")
+            .EmailAddress().WithMessage("Некорректный email");
 
         RuleFor(x => x.Password)
-            .NotEmpty();
+            .NotEmpty().WithMessage("Пароль обязателен");
     }
 }
 
@@ -52,20 +52,29 @@ internal sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result
         var user = await _userRepository.GetByEmailAsync(email, ct);
 
         if (user is null)
-            return Result.Failure<AuthResponse>("Invalid credentials");
+            return Result.Failure<AuthResponse>("Неверный email или пароль");
 
         if (!user.IsActive)
-            return Result.Failure<AuthResponse>("Account is deactivated");
+            return Result.Failure<AuthResponse>("Аккаунт деактивирован");
+
+        if (user.IsLockedOut)
+            return Result.Failure<AuthResponse>("Аккаунт временно заблокирован. Попробуйте позже");
 
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash.Value))
-            return Result.Failure<AuthResponse>("Invalid credentials");
+        {
+            user.RecordFailedLogin();
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync(ct);
+            return Result.Failure<AuthResponse>("Неверный email или пароль");
+        }
 
-        user.RecordLogin();
+        user.RecordSuccessfulLogin();
         _userRepository.Update(user);
 
         var accessToken = _jwtProvider.GenerateAccessToken(user);
         var refreshTokenValue = _jwtProvider.GenerateRefreshToken();
-        var refreshToken = RefreshToken.Create(user.Id, refreshTokenValue, 7);
+        var tokenExpiryDays = request.RememberMe ? 30 : 7;
+        var refreshToken = RefreshToken.Create(user.Id, refreshTokenValue, tokenExpiryDays);
 
         await _refreshTokenRepository.AddAsync(refreshToken, ct);
         await _unitOfWork.SaveChangesAsync(ct);

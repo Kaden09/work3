@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using MediatR;
 using MessagingPlatform.API.Models;
 using MessagingPlatform.Application.Features.Auth.Commands;
@@ -8,13 +9,40 @@ namespace MessagingPlatform.API.Endpoints;
 
 public static class AuthEndpoints
 {
-    public sealed record RegisterRequest(string Email, string Password, string? FirstName, string? LastName);
-    public sealed record LoginRequest(string Email, string Password);
-    public sealed record RefreshTokenRequest(string RefreshToken);
-    public sealed record AuthResponseDto(Guid UserId, string Email, string AccessToken, string RefreshToken, DateTime ExpiresAt);
-    public sealed record UserResponseDto(Guid Id, string Email, string? FirstName, string? LastName, string Role);
+    private const string AccessTokenCookie = "access_token";
+    private const string RefreshTokenCookie = "refresh_token";
 
-    public static async Task<IResult> Register(RegisterRequest request, ISender sender)
+    public sealed class RegisterRequest
+    {
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [JsonPropertyName("password")]
+        public string Password { get; set; } = string.Empty;
+
+        [JsonPropertyName("firstName")]
+        public string? FirstName { get; set; }
+
+        [JsonPropertyName("lastName")]
+        public string? LastName { get; set; }
+    }
+
+    public sealed class LoginRequest
+    {
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [JsonPropertyName("password")]
+        public string Password { get; set; } = string.Empty;
+
+        [JsonPropertyName("rememberMe")]
+        public bool RememberMe { get; set; }
+    }
+
+    public sealed record AuthResponseDto(Guid UserId, string Email);
+    public sealed record UserResponseDto(Guid Id, string Email, string? FirstName, string? LastName, string Role, string Theme);
+
+    public static async Task<IResult> Register(RegisterRequest request, HttpContext httpContext, ISender sender)
     {
         var command = new RegisterCommand(request.Email, request.Password, request.FirstName, request.LastName);
         var result = await sender.Send(command);
@@ -22,44 +50,49 @@ public static class AuthEndpoints
         if (result.IsFailure)
             return Results.Ok(ApiResponse<AuthResponseDto>.Failure(result.Error!));
 
+        SetAuthCookies(httpContext, result.Value!.AccessToken, result.Value.RefreshToken, result.Value.ExpiresAt);
+
         return Results.Ok(ApiResponse<AuthResponseDto>.Success(new AuthResponseDto(
-            result.Value!.UserId,
-            result.Value.Email,
-            result.Value.AccessToken,
-            result.Value.RefreshToken,
-            result.Value.ExpiresAt)));
+            result.Value.UserId,
+            result.Value.Email)));
     }
 
-    public static async Task<IResult> Login(LoginRequest request, ISender sender)
+    public static async Task<IResult> Login(LoginRequest request, HttpContext httpContext, ISender sender)
     {
-        var command = new LoginCommand(request.Email, request.Password);
+        var command = new LoginCommand(request.Email, request.Password, request.RememberMe);
         var result = await sender.Send(command);
 
         if (result.IsFailure)
             return Results.Ok(ApiResponse<AuthResponseDto>.Failure(result.Error!));
 
+        SetAuthCookies(httpContext, result.Value!.AccessToken, result.Value.RefreshToken, result.Value.ExpiresAt);
+
         return Results.Ok(ApiResponse<AuthResponseDto>.Success(new AuthResponseDto(
-            result.Value!.UserId,
-            result.Value.Email,
-            result.Value.AccessToken,
-            result.Value.RefreshToken,
-            result.Value.ExpiresAt)));
+            result.Value.UserId,
+            result.Value.Email)));
     }
 
-    public static async Task<IResult> RefreshToken(RefreshTokenRequest request, ISender sender)
+    public static async Task<IResult> RefreshToken(HttpContext httpContext, ISender sender)
     {
-        var command = new RefreshTokenCommand(request.RefreshToken);
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookie];
+
+        if (string.IsNullOrEmpty(refreshToken))
+            return Results.Ok(ApiResponse<AuthResponseDto>.Failure("No refresh token provided"));
+
+        var command = new RefreshTokenCommand(refreshToken);
         var result = await sender.Send(command);
 
         if (result.IsFailure)
+        {
+            ClearAuthCookies(httpContext);
             return Results.Ok(ApiResponse<AuthResponseDto>.Failure(result.Error!));
+        }
+
+        SetAuthCookies(httpContext, result.Value!.AccessToken, result.Value.RefreshToken, result.Value.ExpiresAt);
 
         return Results.Ok(ApiResponse<AuthResponseDto>.Success(new AuthResponseDto(
-            result.Value!.UserId,
-            result.Value.Email,
-            result.Value.AccessToken,
-            result.Value.RefreshToken,
-            result.Value.ExpiresAt)));
+            result.Value.UserId,
+            result.Value.Email)));
     }
 
     public static async Task<IResult> GetCurrentUser(ClaimsPrincipal user, IUserRepository userRepository)
@@ -79,6 +112,53 @@ public static class AuthEndpoints
             dbUser.Email.Value,
             dbUser.FirstName,
             dbUser.LastName,
-            dbUser.Role.ToString())));
+            dbUser.Role.ToString(),
+            dbUser.Theme.ToString().ToLowerInvariant())));
+    }
+
+    public static async Task<IResult> Logout(HttpContext httpContext, ISender sender)
+    {
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookie];
+
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            var command = new LogoutCommand(refreshToken);
+            await sender.Send(command);
+        }
+
+        ClearAuthCookies(httpContext);
+
+        return Results.Ok(ApiResponse<bool>.Success(true));
+    }
+
+    private static void SetAuthCookies(HttpContext httpContext, string accessToken, string refreshToken, DateTime refreshTokenExpiry)
+    {
+        var isHttps = httpContext.Request.IsHttps ||
+                      string.Equals(httpContext.Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
+        var sameSite = isHttps ? SameSiteMode.Strict : SameSiteMode.Lax;
+
+        httpContext.Response.Cookies.Append(AccessTokenCookie, accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = isHttps,
+            SameSite = sameSite,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(15),
+            Path = "/"
+        });
+
+        httpContext.Response.Cookies.Append(RefreshTokenCookie, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = isHttps,
+            SameSite = sameSite,
+            Expires = refreshTokenExpiry,
+            Path = "/api/Auth"
+        });
+    }
+
+    private static void ClearAuthCookies(HttpContext httpContext)
+    {
+        httpContext.Response.Cookies.Delete(AccessTokenCookie, new CookieOptions { Path = "/" });
+        httpContext.Response.Cookies.Delete(RefreshTokenCookie, new CookieOptions { Path = "/api/Auth" });
     }
 }

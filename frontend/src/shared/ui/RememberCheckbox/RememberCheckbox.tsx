@@ -1,9 +1,11 @@
 import { Check } from "lucide-react";
-import { useState } from "react";
 
-function RememberCheckbox() {
-  const [checked, setChecked] = useState(false);
+interface RememberCheckboxProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
 
+function RememberCheckbox({ checked, onChange }: RememberCheckboxProps) {
   return (
     <label className="flex items-center space-x-2 cursor-pointer">
       <div className="relative">
@@ -11,7 +13,7 @@ function RememberCheckbox() {
           type="checkbox"
           className="hidden"
           checked={checked}
-          onChange={(e) => setChecked(e.target.checked)}
+          onChange={(e) => onChange(e.target.checked)}
         />
         <div
           className={`w-4 h-4 border-2 rounded-sm transition-all duration-200

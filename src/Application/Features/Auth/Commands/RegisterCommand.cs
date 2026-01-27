@@ -20,24 +20,24 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
     public RegisterCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty()
-            .EmailAddress()
-            .MaximumLength(256);
+            .NotEmpty().WithMessage("Email обязателен")
+            .EmailAddress().WithMessage("Некорректный email")
+            .MaximumLength(256).WithMessage("Email слишком длинный");
 
         RuleFor(x => x.Password)
-            .NotEmpty()
-            .MinimumLength(8)
-            .MaximumLength(128)
-            .Matches(@"[A-Z]").WithMessage("Password must contain uppercase letter")
-            .Matches(@"[a-z]").WithMessage("Password must contain lowercase letter")
-            .Matches(@"[0-9]").WithMessage("Password must contain digit")
-            .Matches(@"[^a-zA-Z0-9]").WithMessage("Password must contain special character");
+            .NotEmpty().WithMessage("Пароль обязателен")
+            .MinimumLength(8).WithMessage("Минимум 8 символов")
+            .MaximumLength(128).WithMessage("Максимум 128 символов")
+            .Matches(@"[A-Z]").WithMessage("Нужна заглавная буква (A-Z)")
+            .Matches(@"[a-z]").WithMessage("Нужна строчная буква (a-z)")
+            .Matches(@"[0-9]").WithMessage("Нужна цифра (0-9)")
+            .Matches(@"[^a-zA-Z0-9]").WithMessage("Нужен спецсимвол (!@#$%^&*)");
 
         RuleFor(x => x.FirstName)
-            .MaximumLength(100);
+            .MaximumLength(100).WithMessage("Имя слишком длинное");
 
         RuleFor(x => x.LastName)
-            .MaximumLength(100);
+            .MaximumLength(100).WithMessage("Фамилия слишком длинная");
     }
 }
 
@@ -68,7 +68,7 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
         var email = Email.Create(request.Email);
 
         if (await _userRepository.ExistsAsync(email, ct))
-            return Result.Failure<AuthResponse>("User with this email already exists");
+            return Result.Failure<AuthResponse>("Пользователь с таким email уже существует");
 
         var passwordHash = PasswordHash.Create(_passwordHasher.Hash(request.Password));
         var user = User.Create(email, passwordHash);

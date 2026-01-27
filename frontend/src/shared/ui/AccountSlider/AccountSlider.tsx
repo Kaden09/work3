@@ -29,13 +29,12 @@ function AccountSlider({ className }: IAccountSlider) {
     setOneAccountPrice(newOneAccountPrice);
   }, [accounts, price]);
 
-  const cls = cx(
-    `
-    w-full 
-    h-3 
-    bg-bg-contrast-20 
-    rounded-lg 
-    appearance-none 
+  const sliderStyles = `
+    w-full
+    h-3
+    bg-bg-contrast-20
+    rounded-lg
+    appearance-none
     cursor-pointer
     [&::-webkit-slider-thumb]:appearance-none
     [&::-webkit-slider-thumb]:h-6
@@ -46,23 +45,23 @@ function AccountSlider({ className }: IAccountSlider) {
     [&::-moz-range-thumb]:w-6
     [&::-moz-range-thumb]:rounded-full
     [&::-moz-range-thumb]:bg-button-gradient-start
-  `,
-    className,
-  );
+  `;
 
   return (
-    <input
-      type="range"
-      min="10"
-      max="100"
-      value={value}
-      step="10"
-      onChange={(e) => {
-        setValue(Number(e.target.value));
-        setAccounts(Number(e.target.value));
-      }}
-      className={cls}
-    />
+    <div className={cx("px-[52px]", className)}>
+      <input
+        type="range"
+        min="10"
+        max="100"
+        value={value}
+        step="10"
+        onChange={(e) => {
+          setValue(Number(e.target.value));
+          setAccounts(Number(e.target.value));
+        }}
+        className={sliderStyles}
+      />
+    </div>
   );
 }
 

@@ -1,27 +1,23 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UseFormReset } from "react-hook-form";
-import type { ISignupForm } from "../../../widgets/Forms/SignupForm/types";
 import fetchLogin from "../requests/login";
 import { useNavigate } from "react-router-dom";
 
-function useLogin(reset: UseFormReset<ISignupForm>) {
+interface LoginFormData {
+  email: string;
+  password: string;
+}
+
+function useLogin(reset: UseFormReset<LoginFormData>) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: fetchLogin,
-    onSuccess: (data) => {
-      if (!data.isSuccess && data.errors.length > 0) {
-        console.log(data.errors[0].description);
-      } else {
-        localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("refreshToken", data.data.refreshToken);
-        localStorage.setItem("userId", data.data.userId);
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
       reset();
       navigate("/app");
-    },
-    onError: (error) => {
-      console.log("Ошибка авторизации: ", error);
     },
   });
 }

@@ -1,11 +1,11 @@
 import { MessageCircle, Moon, Settings, Sun } from "lucide-react";
 import SidebarItem from "../../shared/ui/SidebarItem/SidebarItem";
 import { useState } from "react";
-import useTheme from "../../shared/store/useTheme";
+import { useAuth } from "../../shared/context/AuthContext";
 
 function Sidebar() {
   const [selectedItem, setSelectedItem] = useState(0);
-  const { theme, setTheme } = useTheme((state) => state);
+  const { theme, setTheme } = useAuth();
 
   return (
     <div className="flex flex-col justify-between h-full">
@@ -32,7 +32,6 @@ function Sidebar() {
           isButton
           onClick={() => {
             setTheme(theme === "light" ? "dark" : "light");
-            document.documentElement.setAttribute("data-theme", theme);
           }}
         />
         <SidebarItem

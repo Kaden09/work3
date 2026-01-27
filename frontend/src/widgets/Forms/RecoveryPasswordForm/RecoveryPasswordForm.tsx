@@ -27,17 +27,17 @@ function RecoveryPasswordForm() {
   return (
     <form
       onSubmit={handleSubmit(submitForm)}
-      className="animate-fade-in-bottom"
+      className="animate-fade-in-bottom w-full max-w-[320px] sm:max-w-[400px] md:max-w-[500px]"
     >
       <div className="flex flex-col gap-1 items-center">
-        <h1 className="text-font-primary font-bold text-[32px]">
+        <h1 className="text-font-primary font-bold text-xl sm:text-2xl md:text-[28px] lg:text-[32px] text-center">
           Восстановление пароля
         </h1>
-        <h3 className="text-font-secondary font-normal text-[16px]">
+        <h3 className="text-font-secondary font-normal text-sm sm:text-base text-center">
           Пожалуйста, придумайте новый пароль
         </h3>
       </div>
-      <div className="flex flex-col gap-5 mt-10">
+      <div className="flex flex-col gap-4 sm:gap-5 mt-6 sm:mt-8 md:mt-10">
         <AuthInput
           isPassword={false}
           placeholder="Email"

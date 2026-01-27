@@ -4,21 +4,59 @@ on:
   push:
     branches: [main]
 
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/${{ github.repository_owner }}/work500-api
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/work500-frontend
+
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/API/Dockerfile
+          push: true
+          tags: ${{ env.API_IMAGE }}:latest
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: CR_PAT
           script: |
-            cd /root/app
-            git pull origin main
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d --build
+            echo $CR_PAT | docker login ghcr.io -u lmdtokyo --password-stdin
+            docker compose -f /root/app/docker-compose.prod.yml pull
+            docker compose -f /root/app/docker-compose.prod.yml up -d
             docker system prune -f
+        env:
+          CR_PAT: ${{ secrets.CR_PAT }}

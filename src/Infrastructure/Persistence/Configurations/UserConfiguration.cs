@@ -48,6 +48,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(50);
 
+        builder.Property(x => x.Theme)
+            .HasColumnName("theme")
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(MessagingPlatform.Domain.Enums.ThemePreference.Dark);
+
         builder.Property(x => x.IsActive)
             .HasColumnName("is_active")
             .HasDefaultValue(true);
@@ -57,5 +63,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.LastLoginAt)
             .HasColumnName("last_login_at");
+
+        builder.Property(x => x.FailedLoginAttempts)
+            .HasColumnName("failed_login_attempts")
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.LockoutEndAt)
+            .HasColumnName("lockout_end_at");
     }
 }

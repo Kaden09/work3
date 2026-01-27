@@ -13,18 +13,20 @@ function AccountsCountButtonsList() {
   }, [accounts]);
 
   return (
-    <div className="flex justify-between">
-      {values.map((count, i) => (
-        <AccountsCountButton
-          key={count}
-          count={count}
-          isSelected={selectedValue === i}
-          onClick={() => {
-            setSelectedValue(i);
-            setAccounts(count);
-          }}
-        />
-      ))}
+    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex gap-2 sm:gap-3 md:gap-4 lg:justify-between min-w-max lg:min-w-0">
+        {values.map((count, i) => (
+          <AccountsCountButton
+            key={count}
+            count={count}
+            isSelected={selectedValue === i}
+            onClick={() => {
+              setSelectedValue(i);
+              setAccounts(count);
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

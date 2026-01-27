@@ -1,7 +1,6 @@
 import * as yup from "yup";
 
 const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const regexPassword = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
 
 export const signupFormScheme = yup.object().shape({
   email: yup
@@ -12,14 +11,13 @@ export const signupFormScheme = yup.object().shape({
     .matches(regexEmail, "Введите корректный email"),
   password: yup
     .string()
-    .trim()
     .required("Обязательное поле")
-    .min(6, "Минимум 6 символов")
-    .max(24, "Максимум 24 символа")
-    .matches(
-      regexPassword,
-      "Пароль должен содержать не менее 6 символов и состоять только из латинских букв (a-z, A-Z) и цифр (0-9)",
-    ),
+    .min(8, "Минимум 8 символов")
+    .max(128, "Максимум 128 символов")
+    .matches(/[A-Z]/, "Нужна заглавная буква (A-Z)")
+    .matches(/[a-z]/, "Нужна строчная буква (a-z)")
+    .matches(/[0-9]/, "Нужна цифра (0-9)")
+    .matches(/[^a-zA-Z0-9]/, "Нужен спецсимвол (!@#$%^&*)"),
   repeatPassword: yup
     .string()
     .trim()
