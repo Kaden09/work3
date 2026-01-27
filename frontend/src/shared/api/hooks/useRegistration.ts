@@ -10,10 +10,10 @@ function useRegistration(reset: UseFormReset<ISignupForm>) {
 
   return useMutation({
     mutationFn: fetchRegister,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["auth", "me"] });
       reset();
-      navigate("/app");
+      navigate("/app", { replace: true });
     },
   });
 }

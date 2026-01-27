@@ -7,6 +7,7 @@ interface QueuedRequest {
 }
 
 let isRefreshing = false;
+let refreshFailed = false;
 let requestQueue: QueuedRequest[] = [];
 
 function processQueue(error: Error | null = null): void {
@@ -33,7 +34,7 @@ async function refreshTokens(): Promise<boolean> {
 
 function shouldAttemptRefresh(config: InternalAxiosRequestConfig): boolean {
   const url = config.url || "";
-  const skipPaths = ["/login", "/register", "/refresh", "/logout"];
+  const skipPaths = ["/login", "/register", "/refresh", "/logout", "/me"];
   return !skipPaths.some((path) => url.includes(path));
 }
 
@@ -42,7 +43,10 @@ export function setupAuthInterceptor(
   onAuthFailure?: () => void
 ): void {
   instance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      refreshFailed = false;
+      return response;
+    },
     async (error: AxiosError) => {
       const originalRequest = error.config as InternalAxiosRequestConfig & {
         _retry?: boolean;
@@ -53,10 +57,16 @@ export function setupAuthInterceptor(
       }
 
       const isUnauthorized = error.response?.status === 401;
+      const isTooManyRequests = error.response?.status === 429;
       const hasNotRetried = !originalRequest._retry;
       const canRefresh = shouldAttemptRefresh(originalRequest);
 
-      if (isUnauthorized && hasNotRetried && canRefresh) {
+      if (isTooManyRequests) {
+        refreshFailed = true;
+        return Promise.reject(error);
+      }
+
+      if (isUnauthorized && hasNotRetried && canRefresh && !refreshFailed) {
         if (isRefreshing) {
           return new Promise((resolve, reject) => {
             requestQueue.push({ resolve, reject });
@@ -69,11 +79,13 @@ export function setupAuthInterceptor(
         const refreshed = await refreshTokens();
 
         if (refreshed) {
+          refreshFailed = false;
           processQueue();
           isRefreshing = false;
           return instance.request(originalRequest);
         }
 
+        refreshFailed = true;
         processQueue(new Error("Session expired"));
         isRefreshing = false;
 
@@ -85,4 +97,10 @@ export function setupAuthInterceptor(
       return Promise.reject(error);
     }
   );
+}
+
+export function resetRefreshState(): void {
+  refreshFailed = false;
+  isRefreshing = false;
+  requestQueue = [];
 }

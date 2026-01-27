@@ -14,10 +14,10 @@ function useLogin(reset: UseFormReset<LoginFormData>) {
 
   return useMutation({
     mutationFn: fetchLogin,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["auth", "me"] });
       reset();
-      navigate("/app");
+      navigate("/app", { replace: true });
     },
   });
 }

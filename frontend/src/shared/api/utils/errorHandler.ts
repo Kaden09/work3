@@ -65,6 +65,16 @@ export function handleApiError(error: unknown, fallback: string): never {
       throw new Error(errorMessages["Network Error"]);
     }
 
+    const status = error.response.status;
+
+    if (status === 429) {
+      throw new Error("Слишком много запросов. Подождите минуту");
+    }
+
+    if (status === 500 || status === 502 || status === 503) {
+      throw new Error("Ошибка сервера. Попробуйте позже");
+    }
+
     const responseData = error.response.data as ErrorResponse;
 
     if (typeof responseData === "string" && responseData.length > 0) {

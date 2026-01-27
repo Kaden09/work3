@@ -1,4 +1,4 @@
-import { authApi } from "../../config/api/authApi";
+import { authApi, resetRefreshState } from "../../config/api/authApi";
 import { handleApiError } from "../utils/errorHandler";
 
 interface RegisterParams {
@@ -18,6 +18,7 @@ async function fetchRegister({ email, password }: RegisterParams) {
       throw new Error(errorMessage);
     }
 
+    resetRefreshState();
     return data;
   } catch (error) {
     handleApiError(error, "Ошибка регистрации");

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { setupAuthInterceptor } from "./interceptor";
+import { setupAuthInterceptor, resetRefreshState } from "./interceptor";
 
 export const authApi = axios.create({
   baseURL: "/api/Auth",
@@ -14,3 +14,5 @@ export function initAuthApiInterceptor(onAuthFailure: () => void): void {
   setupAuthInterceptor(authApi, onAuthFailure);
   interceptorInitialized = true;
 }
+
+export { resetRefreshState };

@@ -1,4 +1,4 @@
-import { authApi } from "../../config/api/authApi";
+import { authApi, resetRefreshState } from "../../config/api/authApi";
 import { handleApiError } from "../utils/errorHandler";
 
 interface LoginParams {
@@ -20,6 +20,7 @@ async function fetchLogin({ email, password, rememberMe }: LoginParams) {
       throw new Error(errorMessage);
     }
 
+    resetRefreshState();
     return data;
   } catch (error) {
     handleApiError(error, "Ошибка авторизации");

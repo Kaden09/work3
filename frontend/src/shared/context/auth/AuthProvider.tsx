@@ -62,11 +62,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const themeMutation = useMutation({
     mutationFn: updateThemeOnServer,
-    onSuccess: (newTheme) => {
+    onMutate: async (newTheme) => {
+      await queryClient.cancelQueries({ queryKey: ["auth", "me"] });
+      const previousUser = queryClient.getQueryData<User | null>(["auth", "me"]);
       queryClient.setQueryData(["auth", "me"], (prev: User | null) => {
         if (!prev) return prev;
         return { ...prev, theme: newTheme };
       });
+      return { previousUser };
+    },
+    onError: (_error, _newTheme, context) => {
+      if (context?.previousUser) {
+        queryClient.setQueryData(["auth", "me"], context.previousUser);
+        applyTheme(context.previousUser.theme);
+      }
     },
   });
 
