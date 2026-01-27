@@ -1,72 +1,115 @@
-import { EllipsisVertical } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { EllipsisVertical, Trash2 } from "lucide-react";
 import wildberries from "../../assets/wildberries.svg";
 
 interface AccountItemProps {
   shopName: string;
   status: string;
   lastSyncAt: string | null;
-  onMenuClick?: () => void;
+  createdAt: string;
+  onDelete?: () => void;
 }
 
-function formatTimeAgo(dateStr: string | null): string {
+function formatDaysActive(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const days = Math.floor(diffMs / 86400000);
+
+  if (days === 0) return "Активен сегодня";
+  if (days === 1) return "Активен 1 день";
+  if (days < 5) return `Активен ${days} дня`;
+  return `Активен ${days} дней`;
+}
+
+function formatSyncTime(dateStr: string | null): string {
   if (!dateStr) return "Не синхронизировано";
 
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
+  const mins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return "Только что";
-  if (diffMins < 60) return `${diffMins} мин. назад`;
+  if (mins < 1) return "Только что";
+  if (mins < 60) return `${mins} мин. назад`;
 
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} ч. назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ч. назад`;
 
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} дн. назад`;
+  return `${Math.floor(hours / 24)} дн. назад`;
 }
 
-function getStatusDisplay(status: string) {
-  switch (status) {
-    case "active":
-      return { text: "Подключено", className: "bg-green-bg-20 border-green-bg text-green-bg" };
-    case "error":
-      return { text: "Ошибка", className: "bg-red-500/20 border-red-500 text-red-500" };
-    case "inactive":
-      return { text: "Отключено", className: "bg-gray-500/20 border-gray-500 text-gray-400" };
-    case "tokenexpired":
-      return { text: "Токен истёк", className: "bg-yellow-500/20 border-yellow-500 text-yellow-500" };
-    default:
-      return { text: status, className: "bg-gray-500/20 border-gray-500 text-gray-400" };
-  }
+function getStatusStyle(status: string) {
+  const styles: Record<string, { text: string; cls: string }> = {
+    active: { text: "Подключено", cls: "bg-green-bg-20 border-green-bg text-green-bg" },
+    error: { text: "Ошибка", cls: "bg-red-500/20 border-red-500 text-red-500" },
+    inactive: { text: "Отключено", cls: "bg-gray-500/20 border-gray-500 text-gray-400" },
+    tokenexpired: { text: "Токен истёк", cls: "bg-yellow-500/20 border-yellow-500 text-yellow-500" },
+  };
+  return styles[status] || { text: status, cls: "bg-gray-500/20 border-gray-500 text-gray-400" };
 }
 
-function AccountItem({ shopName, status, lastSyncAt, onMenuClick }: AccountItemProps) {
-  const statusDisplay = getStatusDisplay(status);
+function AccountItem({ shopName, status, lastSyncAt, createdAt, onDelete }: AccountItemProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const statusInfo = getStatusStyle(status);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  const handleDelete = () => {
+    setMenuOpen(false);
+    onDelete?.();
+  };
 
   return (
-    <div className="flex flex-col gap-5 bg-chat-tertiary-bg rounded-xl py-4 px-5">
-      <div className="flex justify-between items-center">
+    <div className="flex flex-col gap-4 bg-chat-tertiary-bg rounded-xl py-4 px-5 relative">
+      <div className="flex justify-between items-start">
         <div className="flex gap-3">
-          <img src={wildberries} className="w-13 h-13" />
+          <img src={wildberries} className="w-12 h-12" alt="" />
           <div className="flex flex-col">
-            <h2 className="text-font-primary text-lg font-semibold">
+            <h2 className="text-font-primary text-lg font-semibold leading-tight">
               {shopName}
             </h2>
-            <p className="text-font-secondary">Wildberries</p>
+            <p className="text-font-secondary text-sm">Wildberries</p>
           </div>
         </div>
-        <EllipsisVertical
-          className="text-font-primary cursor-pointer mr-3 w-5 hover:text-font-secondary"
-          onClick={onMenuClick}
-        />
-      </div>
-      <div className="flex gap-3 items-center">
-        <div className={`inline-flex border rounded-full py-1 px-3 text-sm ${statusDisplay.className}`}>
-          {statusDisplay.text}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-1 hover:bg-chat-secondary-bg rounded transition-colors"
+          >
+            <EllipsisVertical className="text-font-primary w-5 h-5" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-8 bg-chat-secondary-bg border border-primary-border rounded-lg shadow-lg z-10 min-w-[140px] py-1">
+              <button
+                onClick={handleDelete}
+                className="w-full flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-chat-tertiary-bg transition-colors text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Удалить
+              </button>
+            </div>
+          )}
         </div>
-        <p className="text-font-secondary text-sm">{formatTimeAgo(lastSyncAt)}</p>
       </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className={`inline-flex border rounded-full py-1 px-3 text-sm ${statusInfo.cls}`}>
+          {statusInfo.text}
+        </span>
+        <span className="text-font-secondary text-sm">{formatSyncTime(lastSyncAt)}</span>
+      </div>
+      <p className="text-font-secondary text-xs">{formatDaysActive(createdAt)}</p>
     </div>
   );
 }

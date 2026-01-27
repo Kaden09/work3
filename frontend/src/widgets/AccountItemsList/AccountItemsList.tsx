@@ -1,5 +1,5 @@
 import AccountItem from "../../shared/ui/AccountItem/AccountItem";
-import { useWbAccounts } from "../../shared/api/hooks/useWbAccounts";
+import { useWbAccounts, useRemoveWbAccount } from "../../shared/api/hooks/useWbAccounts";
 
 interface AccountItemsListProps {
   limit?: number;
@@ -7,6 +7,7 @@ interface AccountItemsListProps {
 
 function AccountItemsList({ limit }: AccountItemsListProps) {
   const { data: accounts, isLoading } = useWbAccounts();
+  const { mutate: deleteAccount } = useRemoveWbAccount();
 
   if (isLoading) {
     return (
@@ -26,6 +27,12 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
 
   const displayAccounts = limit ? accounts.slice(0, limit) : accounts;
 
+  const handleDelete = (accountId: string) => {
+    if (confirm("Удалить этот аккаунт?")) {
+      deleteAccount(accountId);
+    }
+  };
+
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2 relative overflow-hidden">
       {displayAccounts.map((account) => (
@@ -34,6 +41,8 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
           shopName={account.shopName}
           status={account.status}
           lastSyncAt={account.lastSyncAt}
+          createdAt={account.createdAt}
+          onDelete={() => handleDelete(account.id)}
         />
       ))}
     </div>
