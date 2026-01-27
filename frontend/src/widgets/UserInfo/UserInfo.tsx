@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Loader2 } from "lucide-react";
-import { useAuth } from "../../shared/context/AuthContext";
+import { useAuth } from "../../shared/context/auth";
 
 function UserInfo() {
   const navigate = useNavigate();

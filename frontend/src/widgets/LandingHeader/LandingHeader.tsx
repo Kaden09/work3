@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import manitoLogo from "../../shared/assets/manitoLogo.svg";
 import { Menu, Moon, Sun, X } from "lucide-react";
-import { useAuth } from "../../shared/context/AuthContext";
+import { useAuth } from "../../shared/context/auth";
 
 function LandingHeader() {
   const { theme, setTheme } = useAuth();

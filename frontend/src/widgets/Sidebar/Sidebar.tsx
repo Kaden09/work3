@@ -1,7 +1,7 @@
 import { MessageCircle, Moon, Settings, Sun } from "lucide-react";
 import SidebarItem from "../../shared/ui/SidebarItem/SidebarItem";
 import { useState } from "react";
-import { useAuth } from "../../shared/context/AuthContext";
+import { useAuth } from "../../shared/context/auth";
 
 function Sidebar() {
   const [selectedItem, setSelectedItem] = useState(0);

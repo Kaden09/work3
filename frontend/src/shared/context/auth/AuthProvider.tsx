@@ -1,37 +1,9 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { authApi } from "../config/api/authApi";
-import { userApi } from "../config/api/userApi";
-
-type Theme = "dark" | "light";
-
-interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  role: string;
-  theme: Theme;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  logout: () => Promise<void>;
-  refetch: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import { authApi, initAuthApiInterceptor } from "../../config/api/authApi";
+import { userApi, initUserApiInterceptor } from "../../config/api/userApi";
+import { AuthContext } from "./context";
+import type { User, Theme } from "./types";
 
 function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute("data-theme", theme);
@@ -59,8 +31,19 @@ async function updateThemeOnServer(theme: Theme): Promise<Theme> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [isInitialized, setIsInitialized] = useState(false);
   const [localTheme, setLocalTheme] = useState<Theme>("dark");
+  const interceptorsReady = useRef<boolean | null>(null);
+
+  const handleAuthFailure = useCallback(() => {
+    queryClient.setQueryData(["auth", "me"], null);
+    queryClient.clear();
+  }, [queryClient]);
+
+  if (interceptorsReady.current === null) {
+    initAuthApiInterceptor(handleAuthFailure);
+    initUserApiInterceptor(handleAuthFailure);
+    interceptorsReady.current = true;
+  }
 
   const { data: user, isLoading, refetch } = useQuery({
     queryKey: ["auth", "me"],
@@ -93,15 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTheme(theme);
   }, [theme]);
 
-  useEffect(() => {
-    if (!isLoading) {
-      setIsInitialized(true);
-      if (user?.theme) {
-        applyTheme(user.theme);
-      }
-    }
-  }, [isLoading, user?.theme]);
-
   const setTheme = useCallback(
     (newTheme: Theme) => {
       applyTheme(newTheme);
@@ -125,9 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTheme("dark");
   }, [queryClient]);
 
-  const value: AuthContextType = {
+  const value = {
     user: user ?? null,
-    isLoading: !isInitialized,
+    isLoading,
     isAuthenticated: !!user,
     theme,
     setTheme,
@@ -136,12 +110,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
 }
