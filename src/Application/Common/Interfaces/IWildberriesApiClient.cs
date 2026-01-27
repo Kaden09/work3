@@ -6,6 +6,7 @@ public interface IWildberriesApiClient
 {
     Task<bool> ValidateTokenAsync(string token, CancellationToken ct = default);
     Task<IReadOnlyList<WbOrderData>> GetOrdersAsync(string token, DateTime? from = null, CancellationToken ct = default);
+    DateTime? GetTokenExpirationDate(string token);
 }
 
 public sealed record WbOrderData(

@@ -50,6 +50,9 @@ internal sealed class WbAccountConfiguration : IEntityTypeConfiguration<WbAccoun
             .HasColumnName("error_message")
             .HasMaxLength(1024);
 
+        builder.Property(x => x.TokenExpiresAt)
+            .HasColumnName("token_expires_at");
+
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.UserId)

@@ -65,8 +65,9 @@ internal sealed class AddWbAccountCommandHandler : IRequestHandler<AddWbAccountC
         if (!isValidToken)
             return Result.Failure<WbAccountDto>("Недействительный API токен Wildberries");
 
+        var tokenExpiresAt = _wbApiClient.GetTokenExpirationDate(request.ApiToken);
         var apiToken = WbApiToken.Create(request.ApiToken);
-        var account = WbAccount.Create(request.UserId, apiToken, request.ShopName);
+        var account = WbAccount.Create(request.UserId, apiToken, request.ShopName, tokenExpiresAt);
 
         await _accountRepository.AddAsync(account, ct);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -77,6 +78,7 @@ internal sealed class AddWbAccountCommandHandler : IRequestHandler<AddWbAccountC
             account.Status,
             account.LastSyncAt,
             account.CreatedAt,
+            account.TokenExpiresAt,
             account.ErrorMessage);
     }
 }

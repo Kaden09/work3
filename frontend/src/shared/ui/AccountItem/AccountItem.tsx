@@ -6,20 +6,22 @@ interface AccountItemProps {
   shopName: string;
   status: string;
   lastSyncAt: string | null;
-  createdAt: string;
+  tokenExpiresAt: string | null;
   onDelete?: () => void;
 }
 
-function formatDaysActive(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const days = Math.floor(diffMs / 86400000);
+function formatTokenExpiry(expiresAt: string | null): string {
+  if (!expiresAt) return "Срок неизвестен";
 
-  if (days === 0) return "Активен сегодня";
-  if (days === 1) return "Активен 1 день";
-  if (days < 5) return `Активен ${days} дня`;
-  return `Активен ${days} дней`;
+  const exp = new Date(expiresAt);
+  const now = new Date();
+  const diffMs = exp.getTime() - now.getTime();
+  const days = Math.ceil(diffMs / 86400000);
+
+  if (days <= 0) return "Токен истёк";
+  if (days === 1) return "Осталось 1 день";
+  if (days < 5) return `Осталось ${days} дня`;
+  return `Осталось ${days} дней`;
 }
 
 function formatSyncTime(dateStr: string | null): string {
@@ -49,7 +51,7 @@ function getStatusStyle(status: string) {
   return styles[status] || { text: status, cls: "bg-gray-500/20 border-gray-500 text-gray-400" };
 }
 
-function AccountItem({ shopName, status, lastSyncAt, createdAt, onDelete }: AccountItemProps) {
+function AccountItem({ shopName, status, lastSyncAt, tokenExpiresAt, onDelete }: AccountItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const statusInfo = getStatusStyle(status);
@@ -109,7 +111,7 @@ function AccountItem({ shopName, status, lastSyncAt, createdAt, onDelete }: Acco
         </span>
         <span className="text-font-secondary text-sm">{formatSyncTime(lastSyncAt)}</span>
       </div>
-      <p className="text-font-secondary text-xs">{formatDaysActive(createdAt)}</p>
+      <p className="text-font-secondary text-xs">{formatTokenExpiry(tokenExpiresAt)}</p>
     </div>
   );
 }

@@ -41,7 +41,7 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
           shopName={account.shopName}
           status={account.status}
           lastSyncAt={account.lastSyncAt}
-          createdAt={account.createdAt}
+          tokenExpiresAt={account.tokenExpiresAt}
           onDelete={() => handleDelete(account.id)}
         />
       ))}

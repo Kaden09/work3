@@ -12,30 +12,33 @@ public sealed class WbAccount : AggregateRoot<Guid>
     public WbAccountStatus Status { get; private set; }
     public DateTime? LastSyncAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public DateTime? TokenExpiresAt { get; private set; }
     public string? ErrorMessage { get; private set; }
 
     private WbAccount() { }
 
-    private WbAccount(Guid id, Guid userId, WbApiToken apiToken, string shopName) : base(id)
+    private WbAccount(Guid id, Guid userId, WbApiToken apiToken, string shopName, DateTime? tokenExpiresAt) : base(id)
     {
         UserId = userId;
         ApiToken = apiToken;
         ShopName = shopName;
         Status = WbAccountStatus.Active;
         CreatedAt = DateTime.UtcNow;
+        TokenExpiresAt = tokenExpiresAt;
     }
 
-    public static WbAccount Create(Guid userId, WbApiToken apiToken, string shopName)
+    public static WbAccount Create(Guid userId, WbApiToken apiToken, string shopName, DateTime? tokenExpiresAt = null)
     {
         if (string.IsNullOrWhiteSpace(shopName))
             throw new ArgumentException("Название магазина обязательно", nameof(shopName));
 
-        return new WbAccount(Guid.NewGuid(), userId, apiToken, shopName.Trim());
+        return new WbAccount(Guid.NewGuid(), userId, apiToken, shopName.Trim(), tokenExpiresAt);
     }
 
-    public void UpdateToken(WbApiToken newToken)
+    public void UpdateToken(WbApiToken newToken, DateTime? expiresAt = null)
     {
         ApiToken = newToken;
+        TokenExpiresAt = expiresAt;
         Status = WbAccountStatus.Active;
         ErrorMessage = null;
     }

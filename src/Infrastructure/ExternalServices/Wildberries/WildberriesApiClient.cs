@@ -153,6 +153,37 @@ internal sealed class WildberriesApiClient : IWildberriesApiClient
         _logger.LogWarning("Wildberries API: {Message} ({StatusCode})", message, (int)statusCode);
     }
 
+    public DateTime? GetTokenExpirationDate(string token)
+    {
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length != 3)
+                return null;
+
+            var payload = parts[1];
+            var padded = payload.Length % 4 == 0
+                ? payload
+                : payload + new string('=', 4 - payload.Length % 4);
+
+            padded = padded.Replace('-', '+').Replace('_', '/');
+            var bytes = Convert.FromBase64String(padded);
+            var json = System.Text.Encoding.UTF8.GetString(bytes);
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("exp", out var expElement))
+            {
+                var timestamp = expElement.GetInt64();
+                return DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse JWT token expiration");
+        }
+        return null;
+    }
+
     private static HttpRequestMessage CreateRequest(HttpMethod method, string url, string apiToken)
     {
         var request = new HttpRequestMessage(method, url);

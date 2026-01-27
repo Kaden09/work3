@@ -7,6 +7,7 @@ export interface WbAccount {
   status: string;
   lastSyncAt: string | null;
   createdAt: string;
+  tokenExpiresAt: string | null;
   errorMessage: string | null;
 }
 

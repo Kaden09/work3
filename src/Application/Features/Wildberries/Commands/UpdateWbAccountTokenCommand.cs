@@ -56,8 +56,9 @@ internal sealed class UpdateWbAccountTokenCommandHandler : IRequestHandler<Updat
         if (!isValidToken)
             return Result.Failure<WbAccountDto>("Недействительный API токен Wildberries");
 
+        var tokenExpiresAt = _wbApiClient.GetTokenExpirationDate(request.NewToken);
         var newApiToken = WbApiToken.Create(request.NewToken);
-        account.UpdateToken(newApiToken);
+        account.UpdateToken(newApiToken, tokenExpiresAt);
 
         _accountRepository.Update(account);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -68,6 +69,7 @@ internal sealed class UpdateWbAccountTokenCommandHandler : IRequestHandler<Updat
             account.Status,
             account.LastSyncAt,
             account.CreatedAt,
+            account.TokenExpiresAt,
             account.ErrorMessage);
     }
 }

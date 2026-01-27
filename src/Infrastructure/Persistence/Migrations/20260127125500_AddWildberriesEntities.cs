@@ -22,6 +22,7 @@ namespace MessagingPlatform.Infrastructure.Persistence.Migrations
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     last_sync_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    token_expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     error_message = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true)
                 },
                 constraints: table =>

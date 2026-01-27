@@ -35,6 +35,7 @@ internal sealed class GetUserWbAccountsQueryHandler : IRequestHandler<GetUserWbA
                 a.Status,
                 a.LastSyncAt,
                 a.CreatedAt,
+                a.TokenExpiresAt,
                 a.ErrorMessage))
             .ToList();
 

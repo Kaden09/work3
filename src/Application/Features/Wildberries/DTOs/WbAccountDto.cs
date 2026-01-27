@@ -8,4 +8,5 @@ public sealed record WbAccountDto(
     WbAccountStatus Status,
     DateTime? LastSyncAt,
     DateTime CreatedAt,
+    DateTime? TokenExpiresAt,
     string? ErrorMessage);
