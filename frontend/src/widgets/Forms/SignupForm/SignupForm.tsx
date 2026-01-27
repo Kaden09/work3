@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import AuthButton from "../../../shared/ui/AuthButton/AuthButton";
 import AuthInput from "../../../shared/ui/AuthInput/AuthInput";
+import { FormError } from "../../../shared/ui/FormError";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import type { ISignupForm } from "./types";
@@ -64,11 +65,7 @@ function SignupForm() {
           {...register("repeatPassword")}
         />
       </div>
-      {isError && (
-        <div className="mt-3 p-2 px-4 bg-red-400/10 text-red-500 rounded-full border border-red-400 text-xs sm:text-sm">
-          {error.message}
-        </div>
-      )}
+      {isError && <FormError message={error.message} />}
       <AuthButton
         text={isPending ? "Регистрация..." : "Начать работу"}
         disabled={isPending}

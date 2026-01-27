@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using MessagingPlatform.API.Extensions;
 using MessagingPlatform.API.Middleware;
+using MessagingPlatform.API.Services;
 using MessagingPlatform.Application;
 using MessagingPlatform.Infrastructure;
 using MessagingPlatform.Infrastructure.Persistence;
@@ -44,6 +45,7 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<ICookieAuthService, CookieAuthService>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();

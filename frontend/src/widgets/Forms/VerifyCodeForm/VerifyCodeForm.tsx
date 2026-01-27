@@ -1,22 +1,9 @@
-import { useEffect, useState } from "react";
 import AuthButton from "../../../shared/ui/AuthButton/AuthButton";
 import AuthInput from "../../../shared/ui/AuthInput/AuthInput";
+import { useCountdown } from "../../../shared/hooks";
 
 function VerifyCodeForm() {
-  const [time, setTime] = useState<number>(120);
-
-  function formatTime(duration: number) {
-    const minutes = duration / 60;
-    const seconds = duration % 60;
-    if (seconds < 10) return `${parseInt(minutes.toString(), 10)}:0${seconds}`;
-    return `${parseInt(minutes.toString(), 10)}:${seconds}`;
-  }
-
-  useEffect(() => {
-    setTimeout(() => {
-      if (time > 0) setTime(time - 1);
-    }, 1000);
-  }, [time]);
+  const { isRunning, formatted, reset } = useCountdown(120);
 
   return (
     <form className="animate-fade-in-bottom w-full max-w-[320px] sm:max-w-[400px] md:max-w-[500px]">
@@ -38,15 +25,15 @@ function VerifyCodeForm() {
         />
       </div>
       <AuthButton text="Подтвердить" />
-      {time > 0 ? (
+      {isRunning ? (
         <p className="text-font-primary text-center text-xs sm:text-sm mt-4 sm:mt-5">
           Отправить код повторно через:{" "}
-          <span className="text-font-contrast">{formatTime(time)}</span>
+          <span className="text-font-contrast">{formatted}</span>
         </p>
       ) : (
         <p
           className="text-font-contrast text-center text-xs sm:text-sm mt-4 sm:mt-5 cursor-pointer underline-offset-2 underline"
-          onClick={() => setTime(5)}
+          onClick={() => reset(120)}
         >
           Отправить код повторно
         </p>

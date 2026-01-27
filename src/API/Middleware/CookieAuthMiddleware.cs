@@ -1,8 +1,9 @@
+using MessagingPlatform.API.Constants;
+
 namespace MessagingPlatform.API.Middleware;
 
 public sealed class CookieAuthMiddleware
 {
-    private const string AccessTokenCookie = "access_token";
     private readonly RequestDelegate _next;
 
     public CookieAuthMiddleware(RequestDelegate next)
@@ -14,7 +15,7 @@ public sealed class CookieAuthMiddleware
     {
         if (!context.Request.Headers.ContainsKey("Authorization"))
         {
-            var accessToken = context.Request.Cookies[AccessTokenCookie];
+            var accessToken = context.Request.Cookies[CookieNames.AccessToken];
             if (!string.IsNullOrEmpty(accessToken))
             {
                 context.Request.Headers.Append("Authorization", $"Bearer {accessToken}");

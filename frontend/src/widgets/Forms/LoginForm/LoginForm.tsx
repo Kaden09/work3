@@ -5,6 +5,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import AuthButton from "../../../shared/ui/AuthButton/AuthButton";
 import RememberCheckbox from "../../../shared/ui/RememberCheckbox/RememberCheckbox";
 import AuthInput from "../../../shared/ui/AuthInput/AuthInput";
+import { FormError } from "../../../shared/ui/FormError";
 import useLogin from "../../../shared/api/hooks/useLogin";
 import { loginScheme } from "./scheme";
 import type { LoginFormData } from "./types";
@@ -66,11 +67,7 @@ function LoginForm() {
           Забыли пароль?
         </Link>
       </div>
-      {isError && (
-        <div className="mt-3 p-2 px-4 bg-red-400/10 text-red-500 rounded-full border border-red-400 text-xs sm:text-sm">
-          {error.message}
-        </div>
-      )}
+      {isError && <FormError message={error.message} />}
       <AuthButton text={isPending ? "Вход..." : "Войти"} />
       <p className="text-font-primary text-xs sm:text-sm mt-4 sm:mt-5 text-center">
         Вы здесь впервые?{" "}

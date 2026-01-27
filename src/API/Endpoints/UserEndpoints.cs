@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using MediatR;
 using MessagingPlatform.API.Models;
+using MessagingPlatform.API.Utilities;
 using MessagingPlatform.Application.Features.UserSettings.Commands;
 
 namespace MessagingPlatform.API.Endpoints;
@@ -21,9 +22,7 @@ public static class UserEndpoints
         ClaimsPrincipal user,
         ISender sender)
     {
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        if (!ClaimsExtractor.TryGetUserId(user, out var userId))
             return Results.Ok(ApiResponse<ThemeResponseDto>.Failure("Unauthorized"));
 
         var command = new UpdateThemeCommand(userId, request.Theme);

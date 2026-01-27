@@ -1,5 +1,6 @@
 import { ArrowDownWideNarrow, ChevronDown } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
+import { useClickOutside } from "../../hooks";
 
 const filterItems = ["Все", "Доходы", "Расходы", "Возвраты"];
 
@@ -8,23 +9,7 @@ function TransactionsFilter() {
   const [selectedItem, setSelectedItem] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        event.target instanceof Node &&
-        !dropdownRef.current.contains(event.target)
-      ) {
-        setIsOpened(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  useClickOutside(dropdownRef, () => setIsOpened(false), isOpened);
 
   return (
     <div className="flex flex-col relative" ref={dropdownRef}>
