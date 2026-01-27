@@ -24,7 +24,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <LandingPage />,
+    element: (
+      <GuestRoute>
+        <LandingPage />
+      </GuestRoute>
+    ),
     errorElement: <ErrorPage />,
   },
   {
