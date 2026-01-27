@@ -42,6 +42,7 @@ public static class WildberriesEndpoints
         string Status,
         DateTime? LastSyncAt,
         DateTime CreatedAt,
+        DateTime? TokenExpiresAt,
         string? ErrorMessage);
 
     public sealed record OrderResponseDto(
@@ -181,6 +182,7 @@ public static class WildberriesEndpoints
             account.Status.ToString().ToLowerInvariant(),
             account.LastSyncAt,
             account.CreatedAt,
+            account.TokenExpiresAt,
             account.ErrorMessage);
 
     private static OrderResponseDto MapToOrderResponse(WbOrderDto order) =>
