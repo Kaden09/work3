@@ -67,6 +67,22 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
         if (newMessages.Any())
         {
             await _msgRepo.AddRangeAsync(newMessages, ct);
+
+            // update chat last message info
+            var chatUpdates = newMessages
+                .GroupBy(m => m.ChatId)
+                .Select(g => new { ChatId = g.Key, LatestMsg = g.OrderByDescending(x => x.CreatedAt).First() });
+
+            foreach (var upd in chatUpdates)
+            {
+                var chatWbId = existingChats.FirstOrDefault(kv => kv.Value.Id == upd.ChatId).Key;
+                if (chatWbId != null && existingChats.TryGetValue(chatWbId, out var chat))
+                {
+                    chat.UpdateLastMessage(upd.LatestMsg.Text, upd.LatestMsg.CreatedAt);
+                    _chatRepo.Update(chat);
+                }
+            }
+
             await _uow.SaveChangesAsync(ct);
             _logger.LogInformation("Saved {Count} messages to DB", newMessages.Count);
         }
