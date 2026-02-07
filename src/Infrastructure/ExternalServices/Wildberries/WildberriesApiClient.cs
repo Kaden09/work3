@@ -436,14 +436,21 @@ internal sealed class WildberriesApiClient : IWildberriesApiClient
             var content = await response.Content.ReadAsStringAsync(ct);
             var eventsResponse = JsonSerializer.Deserialize<WbEventsResponse>(content, _jsonOptions);
 
-            if (eventsResponse?.Events == null)
+            if (eventsResponse?.Result?.Events == null)
                 return emptyResult;
 
-            var events = eventsResponse.Events
-                .Select(e => new WbEventData(e.ChatId, e.MessageId, e.Text, e.FromClient, e.CreatedDate))
+            var events = eventsResponse.Result.Events
+                .Where(e => e.EventType == "message" && e.Message?.Text != null)
+                .Select(e => new WbEventData(
+                    e.ChatId,
+                    e.EventId,
+                    e.Message!.Text!,
+                    e.Sender == "client",
+                    DateTimeOffset.FromUnixTimeMilliseconds(e.AddTimestamp).UtcDateTime))
                 .ToList();
 
-            return new WbEventsResult(events, eventsResponse.Next, eventsResponse.TotalEvents);
+            var nextCursor = eventsResponse.Result.Next?.ToString();
+            return new WbEventsResult(events, nextCursor, eventsResponse.Result.TotalEvents);
         }
         catch (HttpRequestException ex)
         {

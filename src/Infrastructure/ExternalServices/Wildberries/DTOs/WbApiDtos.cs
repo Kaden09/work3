@@ -166,32 +166,47 @@ public sealed record WbSendMessageResponse
 }
 
 // Events API
+public sealed record WbEventMessageDto
+{
+    [JsonPropertyName("text")]
+    public string? Text { get; init; }
+}
+
 public sealed record WbEventDto
 {
-    [JsonPropertyName("chatId")]
+    [JsonPropertyName("chatID")]
     public string ChatId { get; init; } = string.Empty;
 
-    [JsonPropertyName("messageId")]
-    public string MessageId { get; init; } = string.Empty;
+    [JsonPropertyName("eventID")]
+    public string EventId { get; init; } = string.Empty;
 
-    [JsonPropertyName("text")]
-    public string Text { get; init; } = string.Empty;
+    [JsonPropertyName("eventType")]
+    public string EventType { get; init; } = string.Empty;
 
-    [JsonPropertyName("createdDate")]
-    public DateTime CreatedDate { get; init; }
+    [JsonPropertyName("message")]
+    public WbEventMessageDto? Message { get; init; }
 
-    [JsonPropertyName("fromClient")]
-    public bool FromClient { get; init; }
+    [JsonPropertyName("addTimestamp")]
+    public long AddTimestamp { get; init; }
+
+    [JsonPropertyName("sender")]
+    public string Sender { get; init; } = string.Empty;
+}
+
+public sealed record WbEventsResultDto
+{
+    [JsonPropertyName("next")]
+    public long? Next { get; init; }
+
+    [JsonPropertyName("totalEvents")]
+    public int TotalEvents { get; init; }
+
+    [JsonPropertyName("events")]
+    public List<WbEventDto> Events { get; init; } = new();
 }
 
 public sealed record WbEventsResponse
 {
-    [JsonPropertyName("events")]
-    public List<WbEventDto> Events { get; init; } = new();
-
-    [JsonPropertyName("next")]
-    public string? Next { get; init; }
-
-    [JsonPropertyName("totalEvents")]
-    public int TotalEvents { get; init; }
+    [JsonPropertyName("result")]
+    public WbEventsResultDto? Result { get; init; }
 }
