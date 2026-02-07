@@ -44,7 +44,7 @@ function ChatItemsList({ selectedChat, onSelectChat }: ChatItemsListProps) {
   }
 
   return (
-    <div className="w-full flex flex-col gap-2 mt-1">
+    <div className="w-full flex flex-col gap-2 mt-1 overflow-y-auto overflow-x-hidden pr-2">
       {chats.map((chat) => (
         <ChatItem
           key={chat.id}
