@@ -147,7 +147,7 @@ public static class EndpointExtensions
 
     public static IEndpointRouteBuilder MapChatEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/Chats")
+        var group = app.MapGroup("/api/v1/chats")
             .WithTags("Chats")
             .RequireAuthorization();
 
