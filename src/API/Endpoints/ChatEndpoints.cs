@@ -100,7 +100,7 @@ public static class ChatEndpoints
         var msgs = result.Value!.Select(m => new MessageResponseDto(
             m.Id,
             m.Text,
-            m.SentAt.ToString("HH:mm"),
+            m.SentAt.ToString("o"),
             m.IsFromCustomer)).ToList();
 
         return Results.Ok(ApiResponse<IReadOnlyList<MessageResponseDto>>.Success(msgs));

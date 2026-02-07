@@ -13,9 +13,13 @@ export const Chats = () => {
     setMsgKey(k => k + 1);
   };
 
+  const handleBackToList = () => {
+    setSelectedChatId(null);
+  };
+
   return (
     <div className="bg-chat-bg w-full h-svh flex gap-2 justify-center items-start overflow-hidden relative pb-4">
-      <div className="w-full flex flex-col gap-3 animate-fade-in-bottom">
+      <div className={`w-full flex flex-col gap-3 animate-fade-in-bottom ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
         <Searchbar />
         <hr className="border-border mx-2" />
         <ChatsCategoryItemsList />
@@ -24,9 +28,16 @@ export const Chats = () => {
           onSelectChat={setSelectedChatId}
         />
       </div>
-      <div className="flex flex-col w-full h-full bg-linear-to-b from-chat-gradient-bg-1 to-chat-gradient-bg-2 rounded-2xl p-4 py-3 pb-2 border border-primary-border animate-fade-in-bottom">
+      <div className={`flex flex-col w-full h-full bg-linear-to-b from-chat-gradient-bg-1 to-chat-gradient-bg-2 rounded-2xl p-4 py-3 pb-2 border border-primary-border animate-fade-in-bottom ${!selectedChatId ? 'hidden md:flex' : 'flex'}`}>
         {selectedChatId ? (
-          <ChatWindow key={msgKey} chatId={selectedChatId} />
+          <>
+            <div className="flex items-center gap-2 mb-3 md:hidden">
+              <button onClick={handleBackToList} className="text-font-primary">
+                ← Назад
+              </button>
+            </div>
+            <ChatWindow key={msgKey} chatId={selectedChatId} />
+          </>
         ) : (
           <div className="h-full text-font-secondary flex items-center justify-center">
             Пока что здесь пусто...
