@@ -37,11 +37,11 @@ internal sealed class ChatConfiguration : IEntityTypeConfiguration<Chat>
 
         builder.Property(x => x.ContactAvatar)
             .HasColumnName("contact_avatar")
-            .HasMaxLength(500);
+            .HasMaxLength(1000);
 
         builder.Property(x => x.LastMessageText)
             .HasColumnName("last_message_text")
-            .HasMaxLength(500);
+            .HasColumnType("text");
 
         builder.Property(x => x.LastMessageAt)
             .HasColumnName("last_message_at");
