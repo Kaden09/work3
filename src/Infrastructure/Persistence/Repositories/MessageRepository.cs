@@ -27,11 +27,12 @@ internal sealed class MessageRepository : IMessageRepository
     public async Task<bool> ExistsAsync(string wbMessageId, CancellationToken ct = default)
         => await _ctx.Messages.AnyAsync(x => x.WbMessageId == wbMessageId, ct);
 
-    public async Task<HashSet<string>> GetExistingMessageIdsAsync(IEnumerable<string> wbMessageIds, CancellationToken ct = default)
+    public async Task<HashSet<string>> GetExistingMessageIdsAsync(IEnumerable<Guid> chatIds, IEnumerable<string> wbMessageIds, CancellationToken ct = default)
     {
         var idList = wbMessageIds.ToList();
+        var chatIdList = chatIds.ToList();
         var existing = await _ctx.Messages
-            .Where(x => idList.Contains(x.WbMessageId))
+            .Where(x => chatIdList.Contains(x.ChatId) && idList.Contains(x.WbMessageId))
             .Select(x => x.WbMessageId)
             .ToListAsync(ct);
         return existing.ToHashSet();

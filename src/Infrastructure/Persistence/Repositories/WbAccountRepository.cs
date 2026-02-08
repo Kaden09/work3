@@ -32,6 +32,13 @@ internal sealed class WbAccountRepository : IWbAccountRepository
         => await _context.WbAccounts.AnyAsync(
             x => x.UserId == userId && x.ShopName.ToLower() == shopName.ToLower(), ct);
 
+    public async Task<bool> TokenAlreadyUsedAsync(string apiToken, CancellationToken ct = default)
+    {
+        // tokens encrypted in DB, need to load and compare in memory
+        var accounts = await _context.WbAccounts.ToListAsync(ct);
+        return accounts.Any(a => a.ApiToken.Value == apiToken);
+    }
+
     public async Task AddAsync(WbAccount account, CancellationToken ct = default)
         => await _context.WbAccounts.AddAsync(account, ct);
 

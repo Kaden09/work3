@@ -70,6 +70,10 @@ internal sealed class AddWbAccountCommandHandler : IRequestHandler<AddWbAccountC
         if (shopExists)
             return Result.Failure<WbAccountDto>("Магазин с таким названием уже добавлен");
 
+        var tokenUsed = await _accountRepository.TokenAlreadyUsedAsync(request.ApiToken, ct);
+        if (tokenUsed)
+            return Result.Failure<WbAccountDto>("Этот API токен уже используется другим аккаунтом");
+
         var isValidToken = await _wbApiClient.ValidateTokenAsync(request.ApiToken, ct);
         if (!isValidToken)
             return Result.Failure<WbAccountDto>("Недействительный API токен Wildberries");

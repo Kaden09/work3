@@ -145,7 +145,8 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
         }
 
         var msgIds = eventsResult.Events.Select(e => e.MessageId).ToList();
-        var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(msgIds, ct);
+        var ourChatIds = existingChats.Values.Select(c => c.Id).ToList();
+        var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(ourChatIds, msgIds, ct);
 
         _logger.LogDebug("Found {Count} existing message IDs out of {Total}", existingMsgIds.Count, msgIds.Count);
 
@@ -278,7 +279,8 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
             }
 
             var msgIds = filteredEvents.Select(e => e.MessageId).ToList();
-            var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(msgIds, ct);
+            var chatEntityIds = existingChats.Values.Select(c => c.Id).ToList();
+            var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(chatEntityIds, msgIds, ct);
 
             var newMessages = filteredEvents
                 .Where(e => !existingMsgIds.Contains(e.MessageId))

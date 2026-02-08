@@ -9,6 +9,7 @@ public interface IWbAccountRepository
     Task<IReadOnlyList<WbAccount>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<WbAccount>> GetActiveAccountsAsync(CancellationToken ct = default);
     Task<bool> ExistsForUserAsync(Guid userId, string shopName, CancellationToken ct = default);
+    Task<bool> TokenAlreadyUsedAsync(string apiToken, CancellationToken ct = default);
     Task AddAsync(WbAccount account, CancellationToken ct = default);
     void Update(WbAccount account);
     void Delete(WbAccount account);

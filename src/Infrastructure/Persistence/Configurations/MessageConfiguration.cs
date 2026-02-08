@@ -26,7 +26,7 @@ internal sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.ChatId).HasDatabaseName("ix_messages_chat_id");
-        builder.HasIndex(x => x.WbMessageId).IsUnique().HasDatabaseName("ix_messages_wb_message_id");
+        builder.HasIndex(x => new { x.ChatId, x.WbMessageId }).IsUnique().HasDatabaseName("ix_messages_chat_wb_msg");
         builder.HasIndex(x => new { x.ChatId, x.CreatedAt }).HasDatabaseName("ix_messages_chat_created");
     }
 }
