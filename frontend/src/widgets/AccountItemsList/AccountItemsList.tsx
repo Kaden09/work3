@@ -4,7 +4,6 @@ import {
   useRemoveWbAccount,
   useLoadFullHistory
 } from "../../shared/api/hooks/useWbAccounts";
-import { toast } from "sonner";
 
 interface AccountItemsListProps {
   limit?: number;
@@ -13,7 +12,7 @@ interface AccountItemsListProps {
 function AccountItemsList({ limit }: AccountItemsListProps) {
   const { data: accounts, isLoading } = useWbAccounts();
   const { mutate: deleteAccount } = useRemoveWbAccount();
-  const { mutate: loadHistory, isPending: isLoadingHistory } = useLoadFullHistory();
+  const { mutate: loadHistory } = useLoadFullHistory();
 
   if (isLoading) {
     return (
@@ -42,13 +41,12 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
   const handleLoadHistory = (accId: string, shopName: string) => {
     if (!confirm(`Загрузить всю историю чатов для ${shopName}? Это может занять время.`)) return;
 
-    toast.loading("Загрузка истории...", { id: accId });
     loadHistory(accId, {
       onSuccess: (count) => {
-        toast.success(`Загружено ${count} сообщений`, { id: accId });
+        alert(`Загружено ${count} сообщений`);
       },
       onError: (err: any) => {
-        toast.error(err?.message || "Ошибка загрузки", { id: accId });
+        alert(err?.message || "Ошибка загрузки");
       }
     });
   };
