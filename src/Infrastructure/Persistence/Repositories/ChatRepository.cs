@@ -24,9 +24,8 @@ internal sealed class ChatRepository : IChatRepository
                 _context.Messages,
                 chat => chat.Id,
                 msg => msg.ChatId,
-                (chat, messages) => new { Chat = chat, HasMessages = messages.Any(), LastMsgTime = messages.Max(m => (DateTime?)m.CreatedAt) })
-            .OrderByDescending(x => x.HasMessages)
-            .ThenByDescending(x => x.LastMsgTime ?? x.Chat.LastMessageAt ?? x.Chat.CreatedAt)
+                (chat, messages) => new { Chat = chat, LastMsgTime = messages.Max(m => (DateTime?)m.CreatedAt) })
+            .OrderByDescending(x => x.LastMsgTime ?? x.Chat.LastMessageAt ?? x.Chat.CreatedAt)
             .Select(x => x.Chat)
             .ToListAsync(ct);
 
