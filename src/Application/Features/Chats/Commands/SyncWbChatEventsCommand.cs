@@ -96,102 +96,88 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
         var chatIdSet = eventsResult.Events.Select(e => e.ChatId).Distinct().ToList();
         var existingChats = await _chatRepo.GetByWbChatIdsAsync(req.WbAccountId, chatIdSet, ct);
 
-        _logger.LogDebug("Found {Count} existing chats for {EventCount} events", existingChats.Count, eventsResult.Events.Count);
-
-        // load WB chats data for names/avatars
+        // load WB chats for names
         var wbChatsData = await _wbApi.GetChatsAsync(wbAcc.ApiToken, ct);
         var wbChatLookup = wbChatsData.ToDictionary(c => c.ChatId, c => c);
 
-        // create missing chats from events
+        // prepare missing chats (don't save yet)
         var missingChatIds = chatIdSet.Where(cid => !existingChats.ContainsKey(cid)).ToList();
-        if (missingChatIds.Any())
+        var newChats = new List<Chat>();
+        foreach (var wbChatId in missingChatIds)
         {
-            _logger.LogInformation("Creating {Count} new chats from events", missingChatIds.Count);
-
-            var newChats = new List<Chat>();
-            foreach (var wbChatId in missingChatIds)
+            var firstEvt = eventsResult.Events.First(e => e.ChatId == wbChatId);
+            var chatName = "Покупатель";
+            string? avatar = null;
+            if (wbChatLookup.TryGetValue(wbChatId, out var info) && !string.IsNullOrWhiteSpace(info.CustomerName))
             {
-                var firstEvent = eventsResult.Events.First(e => e.ChatId == wbChatId);
-
-                var chatName = "Покупатель";
-                string? avatar = null;
-                if(wbChatLookup.TryGetValue(wbChatId, out var wbChatInfo) && !string.IsNullOrWhiteSpace(wbChatInfo.CustomerName)) {
-                    chatName = wbChatInfo.CustomerName;
-                    avatar = wbChatInfo.CustomerAvatar;
-                }
-
-                var chat = Chat.CreateFromWb(req.UserId, req.WbAccountId, wbChatId, chatName, avatar);
-                chat.UpdateLastMessage(firstEvent.Text, firstEvent.CreatedAt);
-                newChats.Add(chat);
-                existingChats[wbChatId] = chat;
+                chatName = info.CustomerName;
+                avatar = info.CustomerAvatar;
             }
-            await _chatRepo.AddRangeAsync(newChats, ct);
-            await _uow.SaveChangesAsync(ct);
+            var chat = Chat.CreateFromWb(req.UserId, req.WbAccountId, wbChatId, chatName, avatar);
+            chat.UpdateLastMessage(firstEvt.Text, firstEvt.CreatedAt);
+            newChats.Add(chat);
+            existingChats[wbChatId] = chat;
         }
 
-        // update existing chats with placeholder names
-        foreach(var (wbChatId, chat) in existingChats)
+        // fix placeholder names on existing chats
+        foreach (var (wbChatId, chat) in existingChats)
         {
-            if(chat.ContactName is "Клиент" or "Продавец" or "Неизвестный" or "Покупатель")
-            {
-                if(wbChatLookup.TryGetValue(wbChatId, out var wbInfo))
+            if (chat.ContactName is "Клиент" or "Продавец" or "Неизвестный" or "Покупатель")
+                if (wbChatLookup.TryGetValue(wbChatId, out var wbInfo))
                 {
                     chat.UpdateContact(wbInfo.CustomerName, wbInfo.CustomerAvatar);
                     _chatRepo.Update(chat);
                 }
-            }
         }
 
         var msgIds = eventsResult.Events.Select(e => e.MessageId).ToList();
         var ourChatIds = existingChats.Values.Select(c => c.Id).ToList();
         var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(ourChatIds, msgIds, ct);
 
-        _logger.LogDebug("Found {Count} existing message IDs out of {Total}", existingMsgIds.Count, msgIds.Count);
-
         var newMessages = eventsResult.Events
             .Where(e => !existingMsgIds.Contains(e.MessageId))
             .Select(e => Message.Create(existingChats[e.ChatId].Id, e.MessageId, e.Text, e.IsFromCustomer, e.CreatedAt))
             .ToList();
 
-        _logger.LogInformation("Syncing {Count} new messages for account {AccountId}", newMessages.Count, req.WbAccountId);
+        _logger.LogInformation("Syncing {New} msgs, {Chats} new chats for {Account}",
+            newMessages.Count, newChats.Count, req.WbAccountId);
+
+        // atomic save: chats + messages + cursor together
+        if (newChats.Any())
+            await _chatRepo.AddRangeAsync(newChats, ct);
 
         if (newMessages.Any())
         {
             await _msgRepo.AddRangeAsync(newMessages, ct);
 
-            // update chat last message info
             var chatUpdates = newMessages
                 .GroupBy(m => m.ChatId)
-                .Select(g => new { ChatId = g.Key, LatestMsg = g.OrderByDescending(x => x.CreatedAt).First() });
-
+                .Select(g => new { ChatId = g.Key, Latest = g.OrderByDescending(x => x.CreatedAt).First() });
             foreach (var upd in chatUpdates)
             {
-                var chatWbId = existingChats.FirstOrDefault(kv => kv.Value.Id == upd.ChatId).Key;
-                if (chatWbId != null && existingChats.TryGetValue(chatWbId, out var chat))
+                var wbId = existingChats.FirstOrDefault(kv => kv.Value.Id == upd.ChatId).Key;
+                if (wbId != null && existingChats.TryGetValue(wbId, out var c))
                 {
-                    chat.UpdateLastMessage(upd.LatestMsg.Text, upd.LatestMsg.CreatedAt);
-                    _chatRepo.Update(chat);
+                    c.UpdateLastMessage(upd.Latest.Text, upd.Latest.CreatedAt);
+                    _chatRepo.Update(c);
                 }
-            }
-
-            await _uow.SaveChangesAsync(ct);
-            _logger.LogInformation("Saved {Count} messages to DB", newMessages.Count);
-
-            // push realtime notifications
-            foreach (var msg in newMessages)
-            {
-                var chatWbId = existingChats.FirstOrDefault(kv => kv.Value.Id == msg.ChatId).Key;
-                if (chatWbId != null && existingChats.TryGetValue(chatWbId, out var ch))
-                    await _notifier.NotifyNewMessage(req.UserId, ch.Id, msg.WbMessageId, msg.Text, msg.IsFromCustomer, msg.CreatedAt);
             }
         }
 
-        // update cursor for next sync
         if (!string.IsNullOrEmpty(eventsResult.NextCursor))
         {
             wbAcc.UpdateEventCursor(eventsResult.NextCursor);
             _wbAccRepo.Update(wbAcc);
-            await _uow.SaveChangesAsync(ct);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+
+        // notifications after successful save
+        foreach (var msg in newMessages)
+        {
+            var wbId = existingChats.FirstOrDefault(kv => kv.Value.Id == msg.ChatId).Key;
+            if (wbId != null && existingChats.TryGetValue(wbId, out var ch))
+                await _notifier.NotifyNewMessage(req.UserId, ch.Id, msg.WbMessageId, msg.Text, msg.IsFromCustomer, msg.CreatedAt);
         }
 
         return Result.Success(newMessages.Count);

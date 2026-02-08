@@ -18,8 +18,13 @@ internal sealed class ChatRepository : IChatRepository
 
     public async Task<IReadOnlyList<Chat>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
+        var chatIds = await _context.Messages
+            .Select(m => m.ChatId)
+            .Distinct()
+            .ToListAsync(ct);
+
         var chats = await _context.Chats
-            .Where(x => x.UserId == userId)
+            .Where(x => x.UserId == userId && chatIds.Contains(x.Id))
             .GroupJoin(
                 _context.Messages,
                 chat => chat.Id,
