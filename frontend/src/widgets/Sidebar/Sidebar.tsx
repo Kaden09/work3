@@ -1,4 +1,4 @@
-import { Crown, Menu, Settings, UserRound } from "lucide-react";
+import { ArrowLeftRight, Crown, Menu, Settings, UserRound } from "lucide-react";
 import WildberriesIcon from "../../shared/assets/WildberriesIcon";
 import AvitoIcon from "../../shared/assets/AvitoIcon";
 import TelegramIcon from "../../shared/assets/TelegramIcon";
@@ -42,6 +42,11 @@ const menuItems = [
     link: "/app/subscription",
     title: "Подписка",
     icon: <Crown />,
+  },
+  {
+    link: "/app/profile/transactions",
+    title: "Транзакции",
+    icon: <ArrowLeftRight size={20} />,
   },
 ];
 

@@ -1,16 +1,37 @@
 import TransactionItem from "../../shared/ui/TransactionItem/TransactionItem";
-import { mockTransactions } from "./mockData";
+import type { OrderItem } from "../../shared/api/requests/wildberries";
 
-function TransactionsItemsList() {
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("ru-RU", {
+    day: "numeric", month: "short", year: "numeric",
+  }) + ", " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+interface Props {
+  orders: OrderItem[];
+}
+
+function TransactionsItemsList({ orders }: Props) {
+  if (!orders.length) {
+    return (
+      <div className="flex items-center justify-center h-40 text-font-secondary">
+        Нет заказов
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1 w-full relative overflow-hidden">
-      {mockTransactions.map((tx) => (
+      {orders.map((o) => (
         <TransactionItem
-          key={tx.id}
-          title={tx.title}
-          platform={tx.platform}
-          sum={tx.sum}
-          date={tx.date}
+          key={o.id}
+          productName={o.productName}
+          status={o.status}
+          totalPrice={o.totalPrice}
+          currency={o.currency}
+          date={formatDate(o.wbCreatedAt)}
+          quantity={o.quantity}
         />
       ))}
     </div>

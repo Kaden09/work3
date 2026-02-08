@@ -121,9 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     disconnectChatSocket();
     queryClient.setQueryData(["auth", "me"], null);
     queryClient.clear();
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    sessionStorage.clear();
     setLocalTheme("dark");
     applyTheme("dark");
   }, [queryClient]);

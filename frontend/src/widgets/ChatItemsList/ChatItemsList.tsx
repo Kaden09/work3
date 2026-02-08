@@ -76,7 +76,7 @@ function ChatItemsList({ selectedChat, onSelectChat, filter, search, platformCha
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-2 mt-1 overflow-y-auto overflow-x-hidden pr-2">
+    <div className="w-full h-full flex flex-col gap-2 mt-1 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin">
       {filtered.map((chat) => (
         <ChatItem
           key={chat.id}

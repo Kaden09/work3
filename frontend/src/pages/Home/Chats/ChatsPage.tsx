@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import Searchbar from "../../../shared/ui/Searchbar/Searchbar";
@@ -9,7 +9,6 @@ import ChatItemsList from "../../../widgets/ChatItemsList/ChatItemsList";
 import ChatWindow from "../../../widgets/ChatWindow/ChatWindow";
 import { useChatSocket } from "../../../shared/hooks/useChatSocket";
 import { useChats } from "../../../shared/api/hooks/useChats";
-import type { Message } from "../../../shared/api/requests/chats";
 
 function getPlatformFromPath(path: string): string | null {
   const seg = path.replace("/app/chats/", "").replace("/app/chats", "");
@@ -19,12 +18,14 @@ function getPlatformFromPath(path: string): string | null {
 
 export const Chats = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [lastMsg, setLastMsg] = useState<Message | null>(null);
+  const [msgRefresh, setMsgRefresh] = useState(0);
   const [chatFilter, setChatFilter] = useState<ChatFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const location = useLocation();
   const { data: chats } = useChats();
+  const chatRef = useRef(selectedChatId);
+  chatRef.current = selectedChatId;
 
   const activePlatform = getPlatformFromPath(location.pathname);
 
@@ -40,16 +41,15 @@ export const Chats = () => {
     [platformChats]
   );
 
-  const onNewMessage = useCallback((payload: { chatId: string; messageId: string; text: string; isFromCustomer: boolean; sentAt: string }) => {
-    queryClient.invalidateQueries({ queryKey: ["chats"] });
+  const selectedChat = useMemo(
+    () => chats?.find(c => c.id === selectedChatId) ?? null,
+    [chats, selectedChatId],
+  );
 
+  const onNewMessage = useCallback((payload: { chatId: string }) => {
+    queryClient.invalidateQueries({ queryKey: ["chats"] });
     if (payload.chatId === selectedChatId) {
-      setLastMsg({
-        id: payload.messageId,
-        text: payload.text,
-        isFromCustomer: payload.isFromCustomer,
-        sentAt: payload.sentAt,
-      });
+      setMsgRefresh(n => n + 1);
     }
   }, [selectedChatId, queryClient]);
 
@@ -60,10 +60,23 @@ export const Chats = () => {
   useChatSocket(onNewMessage, onChatUpdated);
 
   const handleMsgSent = () => {
+    setMsgRefresh(n => n + 1);
     queryClient.invalidateQueries({ queryKey: ["chats"] });
   };
 
-  const handleBackToList = () => setSelectedChatId(null);
+  const closeChat = useCallback(() => setSelectedChatId(null), []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && chatRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedChatId(null);
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, []);
 
   return (
     <div className="bg-chat-bg w-full h-svh flex gap-2 justify-center items-start overflow-hidden relative pb-4 px-2">
@@ -90,18 +103,18 @@ export const Chats = () => {
         {selectedChatId ? (
           <>
             <div className="flex items-center gap-2 mb-3 md:hidden">
-              <button onClick={handleBackToList} className="text-font-primary">
+              <button onClick={closeChat} className="text-font-primary">
                 ← Назад
               </button>
             </div>
-            <ChatWindow chatId={selectedChatId} newMessage={lastMsg} />
+            <ChatWindow chatId={selectedChatId} customerName={selectedChat?.name || "Покупатель"} refreshKey={msgRefresh} />
+            <ChatInput chatId={selectedChatId} onMessageSent={handleMsgSent} />
           </>
         ) : (
           <div className="h-full text-font-secondary flex items-center justify-center">
             Пока что здесь пусто...
           </div>
         )}
-        {selectedChatId && <ChatInput chatId={selectedChatId} onMessageSent={handleMsgSent} />}
       </div>
     </div>
   );

@@ -3,97 +3,97 @@ import { getChatMessages, type Message } from "../../shared/api/requests/chats";
 
 interface ChatWindowProps {
   chatId: string;
-  newMessage?: Message | null;
+  customerName?: string;
+  refreshKey?: number;
 }
 
-function ChatWindow({ chatId, newMessage }: ChatWindowProps) {
+function ChatWindow({ chatId, customerName = "Покупатель", refreshKey = 0 }: ChatWindowProps) {
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCount = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  const fetchMessages = (showLoader: boolean) => {
+    if (showLoader) setLoading(true);
     getChatMessages(chatId)
       .then((data) => {
-        if (!cancelled) {
-          setMsgs(data);
-          setTimeout(scrollToBottom, 80);
+        setMsgs(data);
+        if (data.length > prevCount.current) {
+          setTimeout(scrollToBottom, 60);
         }
+        prevCount.current = data.length;
       })
       .catch(console.error)
-      .finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [chatId]);
-
-  // append incoming real-time messages
-  useEffect(() => {
-    if (!newMessage) return;
-    setMsgs(prev => {
-      if (prev.some(m => m.id === newMessage.id)) return prev;
-      return [...prev, newMessage];
-    });
-    setTimeout(scrollToBottom, 80);
-  }, [newMessage]);
-
-  const scrollToBottom = () => {
-    scrollRef.current && (scrollRef.current.scrollTop = scrollRef.current.scrollHeight);
+      .finally(() => setLoading(false));
   };
 
-  const formatTime = (dateStr: string) => {
+  useEffect(() => {
+    prevCount.current = 0;
+    fetchMessages(true);
+  }, [chatId]);
+
+  useEffect(() => {
+    if (refreshKey > 0) fetchMessages(false);
+  }, [refreshKey]);
+
+  const scrollToBottom = () => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  };
+
+  const fmtTime = (s: string) => {
     try {
-      const d = new Date(dateStr);
-      return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-    } catch {
-      return dateStr;
-    }
+      const d = new Date(s);
+      return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    } catch { return s; }
   };
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center text-font-secondary">
-        Загрузка...
+      <div className="h-full flex flex-col gap-2 pb-3 px-2 justify-end">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className={`flex ${i % 2 ? "justify-start" : "justify-end"}`}>
+            <div className="animate-pulse bg-chat-secondary-bg rounded-2xl h-12 w-[55%]" />
+          </div>
+        ))}
       </div>
     );
   }
 
-  if (msgs.length === 0) {
+  if (!msgs.length) {
     return (
       <div className="h-full flex items-center justify-center text-font-secondary">
-        История сообщений недоступна.<br/>Вы можете отправить новое сообщение ниже.
+        Нет сообщений
       </div>
     );
   }
 
   return (
-    <div
-      ref={scrollRef}
-      className="h-full overflow-y-auto flex flex-col gap-3 pb-3"
-    >
-      {msgs.map((m) => (
-        <div
-          key={m.id}
-          className={`flex ${m.isFromCustomer ? "justify-start" : "justify-end"}`}
-        >
-          <div
-            className={`max-w-[70%] md:max-w-[60%] px-4 py-2 rounded-2xl ${
-              m.isFromCustomer
-                ? "bg-chat-message-customer text-font-primary"
-                : "bg-primary text-white"
-            }`}
-          >
-            <div className="text-sm break-words whitespace-pre-wrap">{m.text}</div>
+    <div ref={scrollRef} className="h-full overflow-y-auto flex flex-col gap-1 pb-3 px-2 scrollbar-thin">
+      {msgs.map((m, i) => {
+        const prev = msgs[i - 1];
+        const showName = m.isFromCustomer && (!prev || !prev.isFromCustomer);
+
+        return (
+          <div key={m.id} className={`flex ${m.isFromCustomer ? "justify-start" : "justify-end"}`}>
             <div
-              className={`text-xs mt-1 ${
-                m.isFromCustomer ? "text-font-secondary" : "text-white/70"
+              className={`max-w-[75%] md:max-w-[65%] px-3.5 py-2 ${
+                m.isFromCustomer
+                  ? "bg-chat-msg-in rounded-2xl rounded-bl-md"
+                  : "bg-chat-msg-out rounded-2xl rounded-br-md"
               }`}
             >
-              {formatTime(m.sentAt)}
+              {showName && (
+                <div className="text-xs font-semibold text-font-contrast mb-0.5">{customerName}</div>
+              )}
+              {!m.isFromCustomer && (!prev || prev.isFromCustomer) && (
+                <div className="text-xs font-semibold text-button-gradient-start mb-0.5">Вы</div>
+              )}
+              <div className="text-sm text-font-primary break-words whitespace-pre-wrap">{m.text}</div>
+              <div className="text-[11px] mt-0.5 text-font-secondary text-right">{fmtTime(m.sentAt)}</div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

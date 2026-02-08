@@ -2,11 +2,15 @@ import { ArrowDownWideNarrow, ChevronDown } from "lucide-react";
 import { useState, useRef } from "react";
 import { useClickOutside } from "../../hooks";
 
-const filterItems = ["Все", "Доходы", "Расходы", "Возвраты"];
+const filterItems = ["Все", "Доходы", "В процессе", "Отмены"];
 
-function TransactionsFilter() {
+interface Props {
+  selected: number;
+  onChange: (idx: number) => void;
+}
+
+function TransactionsFilter({ selected, onChange }: Props) {
   const [isOpened, setIsOpened] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(dropdownRef, () => setIsOpened(false), isOpened);
@@ -19,7 +23,7 @@ function TransactionsFilter() {
       >
         <ArrowDownWideNarrow />
         <span className="font-semibold select-none">
-          {filterItems[selectedItem]}
+          {filterItems[selected]}
         </span>
         <ChevronDown />
       </div>
@@ -31,10 +35,10 @@ function TransactionsFilter() {
             <button
               key={item}
               onClick={() => {
-                setSelectedItem(i);
+                onChange(i);
                 setIsOpened(false);
               }}
-              className={`flex justify-between gap-2 py-2 px-3 cursor-pointer rounded-sm hover:bg-chat-tertiary-bg-hover duration-100 ${selectedItem === i && "bg-chat-tertiary-bg-hover"}`}
+              className={`flex justify-between gap-2 py-2 px-3 cursor-pointer rounded-sm hover:bg-chat-tertiary-bg-hover duration-100 ${selected === i && "bg-chat-tertiary-bg-hover"}`}
             >
               <span className="select-none text-center">{item}</span>
             </button>

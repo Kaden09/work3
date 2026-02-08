@@ -78,6 +78,41 @@ export async function removeWbAccount(accountId: string): Promise<void> {
   }
 }
 
+export interface OrderItem {
+  id: string;
+  wbOrderId: number;
+  status: string;
+  customerPhone: string | null;
+  totalPrice: number;
+  currency: string;
+  productName: string | null;
+  quantity: number;
+  wbCreatedAt: string;
+}
+
+export interface PaginatedOrders {
+  items: OrderItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export async function getUserOrders(skip = 0, take = 50): Promise<PaginatedOrders> {
+  try {
+    const { data } = await wbApi.get<ApiResponse<PaginatedOrders>>(`/orders?skip=${skip}&take=${take}`);
+    if (!data.isSuccess || !data.data) {
+      throw new Error(data.errors?.[0]?.description || "Не удалось загрузить заказы");
+    }
+    return data.data;
+  } catch (error) {
+    handleApiError(error, "Ошибка загрузки заказов");
+    throw error;
+  }
+}
+
 export async function syncWbOrders(accountId: string): Promise<number> {
   try {
     const { data } = await wbApi.post<ApiResponse<{ newOrdersCount: number }>>(

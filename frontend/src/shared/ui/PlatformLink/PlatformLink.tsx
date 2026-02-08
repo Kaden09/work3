@@ -8,9 +8,6 @@ interface IPlatformLink extends Omit<NavLinkProps, "children"> {
   className?: string;
 }
 
-/**
- * PlatformLink - компонент для навигации к чатам платформ
- */
 function PlatformLink({
   to,
   icon,

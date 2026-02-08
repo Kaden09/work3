@@ -5,8 +5,13 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import type { IChangePasswordForm } from "./types";
 import { changePasswordFormScheme } from "./scheme";
 import PrimaryButton from "../../../shared/ui/PrimaryButton/PrimaryButton";
+import { changePassword } from "../../../shared/api/requests/user";
+import { useState } from "react";
 
 function ChangePasswordForm() {
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
   const {
     register,
     handleSubmit,
@@ -17,9 +22,20 @@ function ChangePasswordForm() {
     mode: "onChange",
   });
 
-  function onSubmit() {
-    console.log("+");
-    reset();
+  async function onSubmit(formData: IChangePasswordForm) {
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      await changePassword(formData.currentPassword, formData.newPassword);
+      setStatus("ok");
+      reset();
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err: any) {
+      const msg = err?.response?.data?.errors?.[0]?.description
+        || err?.message || "Не удалось сменить пароль";
+      setErrorMsg(msg);
+      setStatus("error");
+    }
   }
 
   return (
@@ -62,7 +78,17 @@ function ChangePasswordForm() {
           maxLength={128}
           isPassword
         />
-        <PrimaryButton text="Изменитть пароль" className="mt-5" />
+        {status === "ok" && (
+          <p className="text-green-500 text-sm">Пароль успешно изменён</p>
+        )}
+        {status === "error" && (
+          <p className="text-red-500 text-sm">{errorMsg}</p>
+        )}
+        <PrimaryButton
+          text={status === "loading" ? "Сохраняем..." : "Изменить пароль"}
+          className="mt-5"
+          disabled={status === "loading"}
+        />
       </form>
     </div>
   );

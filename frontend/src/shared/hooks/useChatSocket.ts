@@ -9,8 +9,16 @@ interface NewMessagePayload {
   sentAt: string;
 }
 
+interface NewOrderPayload {
+  orderId: string;
+  productName: string | null;
+  price: number;
+  status: string;
+}
+
 type MsgHandler = (msg: NewMessagePayload) => void;
 type ChatUpdateHandler = (data: { chatId: string }) => void;
+type OrderHandler = (data: NewOrderPayload) => void;
 
 let _connection: signalR.HubConnection | null = null;
 
@@ -33,11 +41,14 @@ function getConnection(): signalR.HubConnection {
 export function useChatSocket(
   onNewMessage?: MsgHandler,
   onChatUpdated?: ChatUpdateHandler,
+  onNewOrder?: OrderHandler,
 ) {
   const msgRef = useRef(onNewMessage);
   const chatRef = useRef(onChatUpdated);
+  const orderRef = useRef(onNewOrder);
   msgRef.current = onNewMessage;
   chatRef.current = onChatUpdated;
+  orderRef.current = onNewOrder;
 
   useEffect(() => {
     const conn = getConnection();
@@ -50,8 +61,13 @@ export function useChatSocket(
       chatRef.current?.(data);
     };
 
+    const handleNewOrder = (data: NewOrderPayload) => {
+      orderRef.current?.(data);
+    };
+
     conn.on("NewMessage", handleMsg);
     conn.on("ChatUpdated", handleChatUpdate);
+    conn.on("NewOrder", handleNewOrder);
 
     if (conn.state === signalR.HubConnectionState.Disconnected) {
       conn.start().catch((err) => {
@@ -62,6 +78,7 @@ export function useChatSocket(
     return () => {
       conn.off("NewMessage", handleMsg);
       conn.off("ChatUpdated", handleChatUpdate);
+      conn.off("NewOrder", handleNewOrder);
     };
   }, []);
 
