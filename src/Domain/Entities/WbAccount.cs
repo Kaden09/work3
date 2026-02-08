@@ -14,6 +14,7 @@ public sealed class WbAccount : AggregateRoot<Guid>
     public DateTime CreatedAt { get; private set; }
     public DateTime? TokenExpiresAt { get; private set; }
     public string? ErrorMessage { get; private set; }
+    public string? LastEventCursor { get; private set; }
 
     private WbAccount() { }
 
@@ -71,6 +72,11 @@ public sealed class WbAccount : AggregateRoot<Guid>
         LastSyncAt = DateTime.UtcNow;
         Status = WbAccountStatus.Active;
         ErrorMessage = null;
+    }
+
+    public void UpdateEventCursor(string? cursor)
+    {
+        LastEventCursor = cursor;
     }
 
     public void UpdateShopName(string shopName)

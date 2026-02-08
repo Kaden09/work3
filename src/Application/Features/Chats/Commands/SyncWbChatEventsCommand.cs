@@ -40,17 +40,47 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
         if (wbAcc is null)
             return Result.Failure<int>("WB аккаунт не найден");
 
-        var eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, null, 50, ct);
+        // use cursor to get only new events
+        var eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, wbAcc.LastEventCursor, 100, ct);
 
-        _logger.LogDebug("Got {Count} events from WB API for account {AccountId}", eventsResult.Events.Count, req.WbAccountId);
+        _logger.LogDebug("Got {Count} events from WB API for account {AccountId}, cursor: {Cursor}",
+            eventsResult.Events.Count, req.WbAccountId, wbAcc.LastEventCursor ?? "null");
 
         if (eventsResult.Events.Count == 0)
+        {
+            // still update cursor even if no events
+            if (!string.IsNullOrEmpty(eventsResult.NextCursor))
+            {
+                wbAcc.UpdateEventCursor(eventsResult.NextCursor);
+                _wbAccRepo.Update(wbAcc);
+                await _uow.SaveChangesAsync(ct);
+            }
             return Result.Success(0);
+        }
 
         var chatIdSet = eventsResult.Events.Select(e => e.ChatId).Distinct().ToList();
         var existingChats = await _chatRepo.GetByWbChatIdsAsync(req.WbAccountId, chatIdSet, ct);
 
         _logger.LogDebug("Found {Count} existing chats for {EventCount} events", existingChats.Count, eventsResult.Events.Count);
+
+        // create missing chats from events
+        var missingChatIds = chatIdSet.Where(cid => !existingChats.ContainsKey(cid)).ToList();
+        if (missingChatIds.Any())
+        {
+            _logger.LogInformation("Creating {Count} new chats from events", missingChatIds.Count);
+            var newChats = new List<Chat>();
+            foreach (var wbChatId in missingChatIds)
+            {
+                var firstEvent = eventsResult.Events.First(e => e.ChatId == wbChatId);
+                var chat = Chat.CreateFromWb(req.UserId, req.WbAccountId, wbChatId,
+                    firstEvent.IsFromCustomer ? "Клиент" : "Продавец", null);
+                chat.UpdateLastMessage(firstEvent.Text, firstEvent.CreatedAt);
+                newChats.Add(chat);
+                existingChats[wbChatId] = chat;
+            }
+            await _chatRepo.AddRangeAsync(newChats, ct);
+            await _uow.SaveChangesAsync(ct);
+        }
 
         var msgIds = eventsResult.Events.Select(e => e.MessageId).ToList();
         var existingMsgIds = await _msgRepo.GetExistingMessageIdsAsync(msgIds, ct);
@@ -58,7 +88,7 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
         _logger.LogDebug("Found {Count} existing message IDs out of {Total}", existingMsgIds.Count, msgIds.Count);
 
         var newMessages = eventsResult.Events
-            .Where(e => existingChats.ContainsKey(e.ChatId) && !existingMsgIds.Contains(e.MessageId))
+            .Where(e => !existingMsgIds.Contains(e.MessageId))
             .Select(e => Message.Create(existingChats[e.ChatId].Id, e.MessageId, e.Text, e.IsFromCustomer, e.CreatedAt))
             .ToList();
 
@@ -85,6 +115,14 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
 
             await _uow.SaveChangesAsync(ct);
             _logger.LogInformation("Saved {Count} messages to DB", newMessages.Count);
+        }
+
+        // update cursor for next sync
+        if (!string.IsNullOrEmpty(eventsResult.NextCursor))
+        {
+            wbAcc.UpdateEventCursor(eventsResult.NextCursor);
+            _wbAccRepo.Update(wbAcc);
+            await _uow.SaveChangesAsync(ct);
         }
 
         return Result.Success(newMessages.Count);

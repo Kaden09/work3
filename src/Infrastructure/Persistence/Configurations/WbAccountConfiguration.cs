@@ -53,6 +53,10 @@ internal sealed class WbAccountConfiguration : IEntityTypeConfiguration<WbAccoun
         builder.Property(x => x.TokenExpiresAt)
             .HasColumnName("token_expires_at");
 
+        builder.Property(x => x.LastEventCursor)
+            .HasColumnName("last_event_cursor")
+            .HasMaxLength(256);
+
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.UserId)
