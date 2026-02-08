@@ -2,7 +2,9 @@ import AccountItem from "../../shared/ui/AccountItem/AccountItem";
 import {
   useWbAccounts,
   useRemoveWbAccount,
+  useLoadFullHistory
 } from "../../shared/api/hooks/useWbAccounts";
+import { toast } from "sonner";
 
 interface AccountItemsListProps {
   limit?: number;
@@ -11,6 +13,7 @@ interface AccountItemsListProps {
 function AccountItemsList({ limit }: AccountItemsListProps) {
   const { data: accounts, isLoading } = useWbAccounts();
   const { mutate: deleteAccount } = useRemoveWbAccount();
+  const { mutate: loadHistory, isPending: isLoadingHistory } = useLoadFullHistory();
 
   if (isLoading) {
     return (
@@ -36,6 +39,20 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
     }
   };
 
+  const handleLoadHistory = (accId: string, shopName: string) => {
+    if (!confirm(`Загрузить всю историю чатов для ${shopName}? Это может занять время.`)) return;
+
+    toast.loading("Загрузка истории...", { id: accId });
+    loadHistory(accId, {
+      onSuccess: (count) => {
+        toast.success(`Загружено ${count} сообщений`, { id: accId });
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || "Ошибка загрузки", { id: accId });
+      }
+    });
+  };
+
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2 relative overflow-hidden">
       {displayAccounts.map((account) => (
@@ -46,6 +63,7 @@ function AccountItemsList({ limit }: AccountItemsListProps) {
           lastSyncAt={account.lastSyncAt}
           tokenExpiresAt={account.tokenExpiresAt}
           onDelete={() => handleDelete(account.id)}
+          onLoadHistory={() => handleLoadHistory(account.id, account.shopName)}
         />
       ))}
     </div>

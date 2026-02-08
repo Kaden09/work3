@@ -19,7 +19,7 @@ export const Chats = () => {
 
   return (
     <div className="bg-chat-bg w-full h-svh flex gap-2 justify-center items-start overflow-hidden relative pb-4 px-2">
-      <div className={`w-full max-w-md flex flex-col gap-3 animate-fade-in-bottom overflow-hidden ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`w-full max-w-md h-full flex flex-col gap-3 animate-fade-in-bottom overflow-hidden ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
         <Searchbar />
         <hr className="border-border mx-2" />
         <ChatsCategoryItemsList />
