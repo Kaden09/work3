@@ -49,7 +49,17 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
             return await LoadHistoryUntilDate(wbAcc, req.UserId, new DateTime(2026, 2, 7, 23, 59, 59, DateTimeKind.Utc), ct);
         }
 
-        var eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, wbAcc.LastEventCursor, 100, ct);
+        WbEventsResult eventsResult;
+
+        try
+        {
+            eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, wbAcc.LastEventCursor, 100, ct);
+        }
+        catch (Common.Exceptions.WbApiRateLimitException ex)
+        {
+            _logger.LogWarning("Rate limit during regular sync, will retry in next cycle after {Seconds}s", ex.RetryAfterSeconds);
+            return Result.Success(0);
+        }
 
         _logger.LogDebug("Got {Count} events from WB API for account {AccountId}, cursor: {Cursor}",
             eventsResult.Events.Count, req.WbAccountId, wbAcc.LastEventCursor ?? "null");
@@ -144,7 +154,18 @@ internal sealed class SyncWbChatEventsCommandHandler : IRequestHandler<SyncWbCha
 
         while (iterations < MAX_ITER)
         {
-            var eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, cursor, 100, ct);
+            WbEventsResult eventsResult;
+
+            try
+            {
+                eventsResult = await _wbApi.GetEventsAsync(wbAcc.ApiToken, cursor, 100, ct);
+            }
+            catch (Common.Exceptions.WbApiRateLimitException ex)
+            {
+                _logger.LogWarning("Rate limit hit, waiting {Seconds}s before retry", ex.RetryAfterSeconds);
+                await Task.Delay(TimeSpan.FromSeconds(ex.RetryAfterSeconds), ct);
+                continue; // retry same iteration
+            }
 
             if (eventsResult.Events.Count == 0) break;
 
