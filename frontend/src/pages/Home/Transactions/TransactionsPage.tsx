@@ -48,7 +48,7 @@ export const Transactions = () => {
       <div className={`grow overflow-auto ${styles.transactions}`}>
         {isLoading ? (
           <div className="flex flex-col gap-3 py-2">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
               <div
                 key={i}
                 className="animate-pulse bg-chat-tertiary-bg rounded-xl h-16"

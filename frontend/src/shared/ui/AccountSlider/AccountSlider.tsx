@@ -10,8 +10,8 @@ function AccountSlider() {
   const percentage = ((value - min) / (max - min)) * 100;
 
   useEffect(() => {
-    setValue(accounts)
-  }, [])
+    setValue(accounts);
+  }, []);
 
   return (
     <div className="w-full">

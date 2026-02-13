@@ -17,7 +17,7 @@ function PromocodeSection() {
   };
 
   return (
-    <div className="bg-chat-secondary-bg border border-chat-primary-border rounded-2xl p-5 w-full animate-fade-in-bottom">
+    <div className="bg-chat-secondary-bg border border-chat-primary-border rounded-2xl py-5 px-8 w-full animate-fade-in-bottom">
       <div className="flex items-center gap-4 mb-5">
         <span className="p-2.5 bg-chat-tertiary-bg/80 rounded-lg text-primary-font border border-chat-secondary-border">
           <Asterisk width={20} />

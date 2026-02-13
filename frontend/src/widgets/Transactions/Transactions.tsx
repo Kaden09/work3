@@ -35,7 +35,7 @@ function Transactions() {
       <div className={`grow overflow-auto mt-4 ${styles.transactions}`}>
         {isLoading ? (
           <div className="flex flex-col gap-2">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
               <div
                 key={i}
                 className="animate-pulse bg-chat-tertiary-bg rounded-xl h-14"
