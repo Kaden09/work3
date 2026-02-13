@@ -32,13 +32,13 @@ function PromocodeSection() {
         </div>
       </div>
       <div className="relative group cursor-pointer" onClick={handleCopy}>
-        <div className="w-full rounded-full bg-chat-tertiary-bg py-2 px-5 pr-15 text-sm sm:text-base text-primary-font truncate overflow-hidden whitespace-nowrap text-ellipsis shadow-[0_2px_4px_#00000025] group hover:text-primary-font/80 duration-100 active:scale-98">
+        <div className="w-full rounded-full bg-chat-tertiary-bg py-2.5 px-5 pr-15 text-sm sm:text-base text-primary-font truncate overflow-hidden whitespace-nowrap text-ellipsis shadow-[0_2px_4px_#00000025] group hover:text-primary-font/80 duration-100 active:scale-98">
           {promo}
         </div>
         {copied ? (
-          <Check className="absolute top-2 right-5 pointer-events-none group-hover:scale-108 duration-150 text-primary-font w-4 sm:w-5" />
+          <Check className="absolute top-2 sm:top-2.5 right-5 pointer-events-none group-hover:scale-108 duration-150 text-primary-font w-4 sm:w-5" />
         ) : (
-          <Copy className="absolute top-2 right-5 pointer-events-none group-hover:scale-108 duration-150 text-primary-font w-4 sm:w-5" />
+          <Copy onClick={handleCopy} className="absolute top-2 sm:top-2.5 right-5 pointer-events-none group-hover:scale-108 duration-150 text-primary-font w-4 sm:w-5" />
         )}
       </div>
     </div>

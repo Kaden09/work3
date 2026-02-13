@@ -84,7 +84,7 @@ function Sidebar() {
       </div>
       {menuOpen && (
         <div
-          className={`absolute flex flex-col rounded-xl border border-chat-primary-border left-0 top-16 min-[450px]:left-16 md:left-18 min-[450px]:-top-px bg-chat-secondary-bg z-999 overflow-hidden ${menuOpen && "animate-fade-in-bottom"}`}
+          className={`absolute flex flex-col justify-center rounded-xl border border-chat-primary-border left-0 top-16 min-[450px]:left-16 md:left-18 min-[450px]:-top-px bg-chat-secondary-bg z-999 overflow-hidden ${menuOpen && "animate-fade-in-bottom"}`}
         >
           {menuItems.map((item, i) => (
             <NavLink
